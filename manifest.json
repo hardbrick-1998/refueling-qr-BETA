@@ -1,0 +1,34 @@
+{
+  "name": "Refueling QR Scanner",
+  "short_name": "QR Scan",
+  "description": "Offline-first QR code scanning untuk refueling management MACO",
+  "start_url": "/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#3B82F6",
+  "categories": ["logistics", "productivity"],
+  "screenshots": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 540 720'><rect fill='%233B82F6' width='540' height='720'/><text x='50%' y='50%' text-anchor='middle' dy='.3em' fill='white' font-size='48' font-weight='bold'>QR Scan</text></svg>",
+      "sizes": "540x720",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%233B82F6' rx='45' width='192' height='192'/><text x='50%' y='50%' text-anchor='middle' dy='.35em' fill='white' font-size='100' font-weight='bold'>QR</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect fill='%233B82F6' rx='120' width='512' height='512'/><text x='50%' y='50%' text-anchor='middle' dy='.35em' fill='white' font-size='280' font-weight='bold'>QR</text></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

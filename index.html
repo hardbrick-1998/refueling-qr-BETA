@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>Refueling QR Scanner - Version 12.4 Final</title>
+  
+  <!-- 🔗 PWA MANIFEST LINK -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#3B82F6">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="QR Scan">
+
+  <script src="https://unpkg.com/html5-qrcode@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; }
+    
+    @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+    @keyframes slideUpFadeIn {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .fade-out { animation: fadeOut 0.5s ease-in-out forwards; }
+    .slide-up-fade-in { animation: slideUpFadeIn 0.5s ease-out forwards; }
+    
+    #loginPage {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #E8F4F8 0%, #F0E5FF 100%);
+      padding: 20px;
+      opacity: 1;
+      transition: opacity 0.5s ease-in-out;
+    }
+    
+    .login-container { width: 100%; max-width: 420px; }
+    .login-box {
+      background: white;
+      border-radius: 28px;
+      padding: 50px 35px 40px;
+      box-shadow: 0 12px 50px rgba(0,0,0,0.08);
+      text-align: center;
+    }
+    
+    .logo-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    
+    .logo-header img {
+      width: 50px;
+      height: 50px;
+      object-fit: contain;
+      filter: drop-shadow(0 2px 8px rgba(0,0,0,0.1));
+    }
+    
+    .login-box h1 {
+      font-size: 28px;
+      color: #1F2937;
+      font-weight: 700;
+      margin-bottom: 12px;
+      letter-spacing: -0.5px;
+    }
+    
+    .login-box p {
+      color: #6B7280;
+      font-size: 14px;
+      margin-bottom: 32px;
+      line-height: 1.6;
+      font-weight: 400;
+    }
+    
+    .form-group {
+      margin-bottom: 18px;
+      text-align: left;
+    }
+    
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      color: #374151;
+      font-weight: 600;
+      margin-bottom: 8px;
+      letter-spacing: 0.3px;
+    }
+    
+    .form-group select,
+    .form-group input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid #E5E7EB;
+      border-radius: 16px;
+      font-size: 14px;
+      font-family: 'Inter', sans-serif;
+      transition: all 0.3s ease;
+      background: #F9FAFB;
+      color: #1F2937;
+    }
+    
+    .form-group select {
+      background: #F9FAFB url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%231F2937' d='M1 1l5 5 5-5'/%3E%3C/svg%3E") no-repeat right 14px center;
+      padding-right: 40px;
+      appearance: none;
+      cursor: pointer;
+    }
+    
+    .form-group select:hover,
+    .form-group input:hover {
+      border-color: #D1D5DB;
+      background-color: #FAFBFC;
+    }
+    
+    .form-group select:focus,
+    .form-group input:focus {
+      outline: none;
+      border-color: #3B82F6;
+      background-color: white;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .form-group select:focus {
+      background-color: white;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%233B82F6' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+      background-position: right 14px center;
+      background-repeat: no-repeat;
+    }
+    
+    .form-group input::placeholder { color: #9CA3AF; }
+    .form-group select option { background: white; color: #1F2937; padding: 10px; }
+    
+    .error-box {
+      display: none;
+      background: #FEE2E2;
+      color: #991B1B;
+      padding: 12px 14px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      border-left: 4px solid #DC2626;
+      font-weight: 500;
+    }
+    
+    .login-btn {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, #1F2937 0%, #111827 100%);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .login-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+    }
+    
+    .login-btn:active { transform: translateY(0); }
+    .login-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    
+    .login-footer {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 12px;
+      color: #9CA3AF;
+      font-weight: 500;
+    }
+    
+    #scannerPage {
+      display: none;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #E8F4F8 0%, #F0E5FF 100%);
+      color: #1F2937;
+      flex-direction: column;
+      opacity: 0;
+      transition: opacity 0.5s ease-out;
+    }
+    
+    #scannerPage.active { opacity: 1; }
+    
+    .scanner-header {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      padding: 18px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    
+    .scanner-header h1 {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: #1F2937;
+    }
+    
+    .header-info {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    
+    .user-badge {
+      background: rgba(59, 130, 246, 0.15);
+      color: #1e40af;
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      letter-spacing: 0.3px;
+    }
+    
+    .logout-btn {
+      background: linear-gradient(135deg, #DC2626, #B91C1C);
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      letter-spacing: 0.3px;
+    }
+    
+    .logout-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+    }
+    
+    .scanner-content {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+    
+    .scanner-main { width: 100%; max-width: 460px; }
+    
+    .qr-display-area {
+      background: white;
+      border-radius: 20px;
+      padding: 28px;
+      text-align: center;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+      border: 1px solid rgba(0,0,0,0.05);
+    }
+    
+    .qr-display-area h2 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 22px;
+      color: #1F2937;
+      letter-spacing: 0.3px;
+    }
+    
+    .qr-reader-wrapper {
+      position: relative;
+      margin-bottom: 18px;
+    }
+    
+    #qr-reader {
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 16px;
+      border: 2px solid #E5E7EB;
+      background: linear-gradient(135deg, #F3F4F6, #F9FAFB);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.3s ease;
+    }
+    
+    #qr-reader:hover { border-color: #D1D5DB; }
+    
+    .camera-toggle-btn {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      background: white;
+      border: 1.5px solid #E5E7EB;
+      color: #1F2937;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 18px;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      z-index: 10;
+    }
+    
+    .camera-toggle-btn:hover {
+      background: #F3F4F6;
+      border-color: #3B82F6;
+      color: #3B82F6;
+      transform: scale(1.08);
+    }
+    
+    .camera-toggle-btn:active { transform: scale(0.95); }
+    
+    #result {
+      background: white;
+      color: #1F2937;
+      padding: 14px 16px;
+      border-radius: 12px;
+      font-size: 13px;
+      line-height: 1.5;
+      min-height: 45px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 18px;
+      font-weight: 600;
+      text-align: center;
+      border: 1.5px solid #E5E7EB;
+    }
+    
+    #result.status-disallowed {
+      background: #FEF2F2;
+      border-color: #FECACA;
+      color: #991B1B;
+    }
+    
+    #result.status-allowed {
+      background: #F0FDF4;
+      border-color: #BBFBBB;
+      color: #166534;
+    }
+    
+    #result.status-error {
+      background: #FEF3C7;
+      border-color: #FDE68A;
+      color: #92400E;
+    }
+    
+    #result.status-invalid {
+      background: #FEE2E2;
+      border-color: #FECACA;
+      color: #991B1B;
+    }
+    
+    .result-status {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      justify-content: center;
+    }
+    
+    .result-status-icon { font-size: 20px; }
+    .result-unit { font-size: 12px; font-weight: 700; letter-spacing: 0.3px; }
+    .result-time { font-size: 11px; font-weight: 500; opacity: 0.8; }
+    .result-remain { font-size: 11px; font-weight: 500; opacity: 0.8; margin-top: 3px; }
+    
+    .action-btns {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+    }
+    
+    .action-btns button {
+      width: 54px;
+      height: 54px;
+      border-radius: 14px;
+      border: none;
+      cursor: pointer;
+      font-size: 22px;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    
+    #startBtn {
+      background: linear-gradient(135deg, #3B82F6, #2563EB);
+      color: white;
+    }
+    
+    #startBtn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+    }
+    
+    #startBtn:active { transform: scale(0.95); }
+    
+    #stopBtn {
+      background: white;
+      color: #DC2626;
+      border: 2px solid #DC2626;
+    }
+    
+    #stopBtn:hover {
+      background: rgba(220, 38, 38, 0.1);
+      transform: scale(1.08);
+    }
+    
+    .scanner-footer {
+      background: rgba(255, 255, 255, 0.5);
+      padding: 16px;
+      text-align: center;
+      font-size: 12px;
+      color: #6B7280;
+      border-top: 1px solid rgba(0, 0, 0, 0.05);
+      font-weight: 500;
+      letter-spacing: 0.2px;
+    }
+    
+    .offline-banner {
+      display: none;
+      background: #FEF3C7;
+      color: #92400E;
+      padding: 12px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 600;
+      border-bottom: 2px solid #FDE68A;
+    }
+    
+    .offline-banner.show { display: block; }
+    
+    @media (max-width: 480px) {
+      .login-box { padding: 35px 20px 30px; border-radius: 24px; }
+      .logo-header img { width: 45px; height: 45px; }
+      .login-box h1 { font-size: 24px; }
+      .scanner-header { flex-wrap: wrap; gap: 10px; }
+      .scanner-main { max-width: 100%; }
+      .scanner-content { padding: 20px 15px; }
+      .qr-display-area { padding: 18px; }
+      .action-btns button { width: 50px; height: 50px; font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="offline-banner" id="offlineBanner">📡 Mode Offline - Data akan disimpan lokal</div>
+
+<div id="loginPage">
+  <div class="login-container">
+    <div class="login-box">
+      <div class="logo-header">
+        <h1 style="margin:0;font-size:24px;">Refueling QR</h1>
+      </div>
+      <p>Login dengan akun LINE Anda untuk mulai scan</p>
+      <div class="error-box" id="errorMsg"></div>
+      <form onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label>Username Bays</label>
+          <select id="bays" required>
+            <option value="">Pilih Bays</option>
+            <option value="bays 1">Bays 1 (LINE A)</option>
+            <option value="bays 2">Bays 2 (LINE B)</option>
+            <option value="bays 3">Bays 3 (LINE C)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>🔑 Password</label>
+          <input type="password" id="pwd" placeholder="Masukkan password" required>
+        </div>
+        <button type="submit" class="login-btn" id="loginBtn">Get Started</button>
+      </form>
+      <div class="login-footer">Design by FOG HAULING MACO</div>
+    </div>
+  </div>
+</div>
+
+<div id="scannerPage">
+  <div class="scanner-header">
+    <h1>📱 QR Scan</h1>
+    <div class="header-info">
+      <div class="user-badge" id="userInfo">-</div>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+  </div>
+  <div class="scanner-content">
+    <div class="scanner-main">
+      <div class="qr-display-area">
+        <h2>Scan QR Code</h2>
+        <div class="qr-reader-wrapper">
+          <div id="qr-reader"></div>
+          <button class="camera-toggle-btn" id="cameraToggleBtn" onclick="toggleCamera()" title="Tukar Kamera">📷</button>
+        </div>
+        <div id="result"><span>Tekan ▶ untuk mulai</span></div>
+        <div class="action-btns">
+          <button id="startBtn">▶</button>
+          <button id="stopBtn">⏹</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="scanner-footer">© 2025 Refueling QR System | Logistik Hauling MACO</div>
+</div>
+
+<script>
+const CREDS = {
+  "bays 1": { pwd: "qwerty", line: "A" },
+  "bays 2": { pwd: "poiuyt", line: "B" },
+  "bays 3": { pwd: "12345", line: "C" }
+};
+
+// ✅ UPDATED URL - Apps Script V5.3
+const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbxXmooOLgITLT1hTRUjE_ga6b1PSsvAMfWfsZRmU6hvjSSCY5P-8D1Ko65TX4lP1Qyk/exec";
+
+let user = null, line = null, qr = null, scanning = false, lastCode = null;
+let cameraFacing = "environment";
+let isOnline = navigator.onLine;
+let apiRetryCount = 0;
+const MAX_RETRIES = 3;
+let apiUrl = DEFAULT_API_URL;
+let validUnitIds = new Set();
+let refuelDB = {};
+
+window.addEventListener('online', () => {
+  isOnline = true;
+  document.getElementById('offlineBanner').classList.remove('show');
+  loadRefuelDatabase();
+});
+
+window.addEventListener('offline', () => {
+  isOnline = false;
+  document.getElementById('offlineBanner').classList.add('show');
+});
+
+window.addEventListener("load", () => {
+  if (!isOnline) {
+    document.getElementById('offlineBanner').classList.add('show');
+  }
+  const s = localStorage.getItem("s");
+  if(s) {
+    const { u, l } = JSON.parse(s);
+    user = u; line = l;
+    showScanner();
+    loadRefuelDatabase();
+  }
+});
+
+function extractUnitIdFromQR(qrData) {
+  const normalized = String(qrData).trim().toUpperCase();
+  if (normalized.includes('|')) {
+    return normalized.split('|')[0].trim();
+  }
+  return normalized;
+}
+
+async function loadRefuelDatabase() {
+  try {
+    if (!isOnline) return;
+    
+    const formData = new FormData();
+    formData.append("action", "getRefuelDB");
+    formData.append("line", line);
+    
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      body: formData
+    });
+    
+    const data = await response.json();
+    if (data.status === 'success') {
+      validUnitIds = new Set(data.refuelDB.validUnitIds || []);
+      refuelDB = data.refuelDB.units || {};
+      console.log(`✅ Loaded ${validUnitIds.size} valid units`);
+    }
+  } catch (err) {
+    console.error('loadRefuelDatabase error:', err);
+  }
+}
+
+function isValidUnitFrontend(unitId) {
+  const normalized = String(unitId).trim().toUpperCase();
+  const extractedUnit = normalized.includes('|') 
+    ? normalized.split('|')[0].trim() 
+    : normalized;
+  
+  if (validUnitIds.size > 0 && !validUnitIds.has(extractedUnit)) {
+    console.warn(`❌ Invalid unit: ${extractedUnit} - tidak ada di database`);
+    return false;
+  }
+  
+  if (extractedUnit === lastCode) {
+    console.warn(`⚠️ Duplicate scan: ${extractedUnit}`);
+    return false;
+  }
+  
+  return true;
+}
+
+function handleLogin(e) {
+  e.preventDefault();
+  const b = document.getElementById("bays").value;
+  const p = document.getElementById("pwd").value;
+  const err = document.getElementById("errorMsg");
+  const loginBtn = document.getElementById("loginBtn");
+  
+  if(!b || !CREDS[b] || CREDS[b].pwd !== p) {
+    err.textContent = "❌ Username atau password salah!";
+    err.style.display = "block";
+    return;
+  }
+  
+  user = b;
+  line = CREDS[b].line;
+  localStorage.setItem("s", JSON.stringify({ u: user, l: line }));
+  document.querySelector("form").reset();
+  err.style.display = "none";
+  
+  loginBtn.disabled = true;
+  loginBtn.textContent = "⏳ Loading...";
+  
+  loadRefuelDatabase().then(() => {
+    setTimeout(() => {
+      transitionToScanner();
+      loginBtn.disabled = false;
+      loginBtn.textContent = "Get Started";
+    }, 500);
+  }).catch(() => {
+    err.textContent = "❌ Gagal load database dari server";
+    err.style.display = "block";
+    loginBtn.disabled = false;
+    loginBtn.textContent = "Get Started";
+  });
+}
+
+function transitionToScanner() {
+  const loginPage = document.getElementById("loginPage");
+  const scannerPage = document.getElementById("scannerPage");
+  
+  loginPage.classList.add("fade-out");
+  
+  setTimeout(() => {
+    loginPage.style.display = "none";
+    scannerPage.style.display = "flex";
+    scannerPage.offsetHeight;
+    scannerPage.classList.add("slide-up-fade-in");
+    scannerPage.classList.add("active");
+    
+    document.getElementById("userInfo").textContent = `👤 ${user.toUpperCase()} (${line}) | Units: ${validUnitIds.size}`;
+    
+    setTimeout(() => {
+      const sb = document.getElementById("startBtn");
+      const stb = document.getElementById("stopBtn");
+      if(sb && stb) {
+        sb.onclick = () => startScan();
+        stb.onclick = () => stopScan();
+      }
+    }, 100);
+  }, 500);
+}
+
+function logout() {
+  if(confirm("Logout?")) {
+    localStorage.removeItem("s");
+    user = null; line = null;
+    validUnitIds.clear();
+    refuelDB = {};
+    cameraFacing = "environment";
+    apiRetryCount = 0;
+    if(qr && scanning) qr.stop().then(() => qr.clear()).catch(() => {});
+    
+    const loginPage = document.getElementById("loginPage");
+    const scannerPage = document.getElementById("scannerPage");
+    
+    scannerPage.classList.remove("active");
+    scannerPage.classList.add("fade-out");
+    
+    setTimeout(() => {
+      scannerPage.style.display = "none";
+      scannerPage.classList.remove("fade-out", "slide-up-fade-in");
+      loginPage.style.display = "flex";
+      loginPage.classList.remove("fade-out");
+    }, 500);
+  }
+}
+
+function showScanner() {
+  const loginPage = document.getElementById("loginPage");
+  const scannerPage = document.getElementById("scannerPage");
+  
+  loginPage.style.display = "none";
+  scannerPage.style.display = "flex";
+  scannerPage.classList.add("active");
+  document.getElementById("userInfo").textContent = `👤 ${user.toUpperCase()} (${line})`;
+  
+  setTimeout(() => {
+    const sb = document.getElementById("startBtn");
+    const stb = document.getElementById("stopBtn");
+    if(sb && stb) {
+      sb.onclick = () => startScan();
+      stb.onclick = () => stopScan();
+    }
+  }, 100);
+}
+
+function toggleCamera() {
+  if (!scanning) {
+    alert("Mulai scanning terlebih dahulu!");
+    return;
+  }
+  
+  if(qr && scanning) {
+    qr.stop().then(() => {
+      qr.clear();
+      cameraFacing = cameraFacing === "environment" ? "user" : "environment";
+      startScan();
+    }).catch(() => {});
+  }
+}
+
+function toHourMinute(minutes) {
+  const jam = Math.floor(minutes / 60);
+  const menit = Math.round(minutes % 60);
+  return `${jam}j ${menit}m`;
+}
+
+function extractUnitNumber(qrText) {
+  const normalized = String(qrText).trim().toUpperCase();
+  const unitPart = normalized.includes('|') 
+    ? normalized.split('|')[0].trim() 
+    : normalized;
+  
+  const regex = /^(DT)\d{2}0-(\d{4})/i;
+  const match = unitPart.match(regex);
+  return match ? match[1].toUpperCase() + match[2] : unitPart;
+}
+
+// ✅ SIMPLIFIED: Parse DD/MM/YYYY HH:MM:SS format dari backend
+function parseTimestampSimple(timestampStr) {
+  if (!timestampStr) return "";
+  
+  console.log(`[V12.4] Raw timestamp: ${timestampStr}`);
+  
+  try {
+    // Format: "04/12/2025 17:03:32"
+    const match = timestampStr.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2}):\d{2}/);
+    if (match) {
+      const jam = parseInt(match[4]);
+      const menit = parseInt(match[5]);
+      const result = jam.toString().padStart(2, '0') + ":" + menit.toString().padStart(2, '0');
+      console.log(`✅ Parsed time: ${result}`);
+      return result;
+    }
+    
+    console.warn(`⚠️ Could not parse timestamp: ${timestampStr}`);
+    return "";
+  } catch (err) {
+    console.error(`❌ parseTimestampSimple error: ${err.message}`);
+    return "";
+  }
+}
+
+function speak(text, beepType = null) {
+  showVibrateNotification("🔊 Notifikasi", text);
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  if (beepType) {
+    playBeep(beepType);
+    if (isIOS) {
+      setTimeout(() => {
+        speakVoice(text);
+      }, 1000);
+    } else {
+      speakVoice(text);
+    }
+  } else {
+    speakVoice(text);
+  }
+}
+
+function speakVoice(text) {
+  if (!window.speechSynthesis) return;
+  const synth = window.speechSynthesis;
+  synth.cancel();
+  let utter = new SpeechSynthesisUtterance(text);
+  utter.lang = "id-ID";
+  utter.rate = 0.95;
+  utter.pitch = 1.0;
+  utter.volume = 1.0;
+  const voices = synth.getVoices();
+  const indonesianVoice = voices.find(v => v.lang === 'id-ID' || v.lang.startsWith('id'));
+  if (indonesianVoice) {
+    utter.voice = indonesianVoice;
+  }
+  try {
+    if (window.AudioContext || window.webkitAudioContext) {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+  } catch (e) {
+    console.log("Audio context error:", e);
+  }
+  try {
+    synth.speak(utter);
+  } catch (err) {
+    console.error("Speak error:", err);
+  }
+}
+
+function showVibrateNotification(title, message) {
+  if (navigator.vibrate) {
+    navigator.vibrate([50, 30, 50, 30, 50]);
+  }
+  showLargeToast(title, message);
+}
+
+function showLargeToast(title, message, duration = 4000) {
+  const existing = document.querySelector('.toast-notification');
+  if (existing) existing.remove();
+  const toast = document.createElement('div');
+  toast.className = 'toast-notification';
+  toast.innerHTML = `
+    <div style="font-weight: 700; margin-bottom: 8px; font-size: 18px; line-height: 1.2;">${title}</div>
+    <div style="font-weight: 500; font-size: 15px; line-height: 1.6;">${message}</div>
+  `;
+  toast.style.cssText = `
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.95), rgba(30, 30, 30, 0.95));
+    color: #fff;
+    padding: 20px 24px;
+    border-radius: 16px;
+    font-size: 15px;
+    z-index: 9999;
+    max-width: 340px;
+    text-align: center;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  `;
+  document.body.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(-50%) translateY(10px)';
+    toast.style.transition = 'all 0.3s ease';
+    setTimeout(() => {
+      if (toast.parentElement) {
+        document.body.removeChild(toast);
+      }
+    }, 300);
+  }, duration);
+}
+
+function startScan() {
+  if(scanning) return;
+  try {
+    document.getElementById("result").innerHTML = '<span class="result-status"><span class="result-status-icon">🔄</span> Membuka kamera...</span>';
+    qr = new Html5Qrcode("qr-reader");
+    qr.start({ facingMode: cameraFacing }, { fps: 10, qrbox: 250 }, onScan, () => {});
+    document.getElementById("result").innerHTML = '<span class="result-status"><span class="result-status-icon">📷</span> Arahkan ke QR...</span>';
+    scanning = true;
+    lastCode = null;
+  } catch(e) {
+    document.getElementById("result").innerHTML = `<span class="result-status"><span class="result-status-icon">❌</span> ${e.message}</span>`;
+  }
+}
+
+function stopScan() {
+  if(!qr || !scanning) return;
+  qr.stop().then(() => {
+    qr.clear();
+    scanning = false;
+    document.getElementById("result").innerHTML = '<span class="result-status"><span class="result-status-icon">🔴</span> Dihentikan</span>';
+  }).catch(() => {});
+}
+
+async function onScan(decodedText) {
+  if(decodedText === lastCode) return;
+  lastCode = decodedText;
+  const result = document.getElementById("result");
+  result.className = "";
+  
+  const extractedUnit = extractUnitIdFromQR(decodedText);
+  result.innerHTML = `<span class="result-status"><span class="result-status-icon">✓</span> QR: ${extractedUnit}</span>`;
+  playBeep("scanning");
+  
+  if (!isValidUnitFrontend(decodedText)) {
+    result.className = "status-invalid";
+    result.innerHTML = `<span class="result-status"><span class="result-status-icon">❌</span> Unit tidak terdaftar!</span>`;
+    speak("Unit tidak terdaftar di sistem", "error");
+    playBeep("error");
+    stopScan();
+    return;
+  }
+  
+  const device = /Mobi|Android/i.test(navigator.userAgent) ? "Mobile" : "Desktop";
+  apiRetryCount = 0;
+  processQRCode(decodedText, device, result);
+}
+
+async function processQRCode(decodedText, device, result, retryCount = 0) {
+  try {
+    if (!isOnline) {
+      result.className = "status-error";
+      result.innerHTML = `<span class="result-status"><span class="result-status-icon">📡</span> Mode Offline</span>`;
+      const offlineData = JSON.parse(localStorage.getItem('offlineScans') || '[]');
+      offlineData.push({
+        qr: decodedText,
+        timestamp: new Date().toISOString(),
+        line: line
+      });
+      localStorage.setItem('offlineScans', JSON.stringify(offlineData));
+      speak("Mode offline - data disimpan lokal", "error");
+      return;
+    }
+    
+    const formData = new FormData();
+    formData.append("qrData", decodedText);
+    formData.append("userAgent", navigator.userAgent);
+    formData.append("device", device);
+    formData.append("line", line);
+    
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      body: formData,
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeout);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.status === "success") {
+      handleScanSuccess(data, decodedText, result);
+    } else if (data.refuelingStatus === "INVALID_QR") {
+      result.className = "status-invalid";
+      result.innerHTML = `<span class="result-status"><span class="result-status-icon">❌</span> ${data.message}</span>`;
+      speak(data.message || "Unit tidak valid", "error");
+    } else {
+      result.className = "status-error";
+      result.innerHTML = `<span class="result-status"><span class="result-status-icon">❌</span> ${data.message || "Error"}</span>`;
+      speak(data.message || "Terjadi kesalahan", "error");
+    }
+  } catch (err) {
+    console.error("API Error:", err.message);
+    if (retryCount < MAX_RETRIES && (err.name === 'AbortError' || !isOnline)) {
+      result.className = "status-error";
+      result.innerHTML = `<span class="result-status"><span class="result-status-icon">🔄</span> Retry ${retryCount + 1}/${MAX_RETRIES}...</span>`;
+      speak("Koneksi gagal. Mencoba ulang...", "error");
+      setTimeout(() => {
+        processQRCode(decodedText, device, result, retryCount + 1);
+      }, 2000);
+    } else {
+      result.className = "status-error";
+      result.innerHTML = `<span class="result-status"><span class="result-status-icon">❌</span> Koneksi gagal</span>`;
+      speak("Koneksi gagal. Periksa jaringan anda", "error");
+    }
+  }
+  
+  setTimeout(() => {
+    if (qr && scanning) {
+      qr.stop().then(() => {
+        qr.clear();
+        scanning = false;
+      }).catch(() => {});
+    }
+  }, 2000);
+}
+
+function handleScanSuccess(data, decodedText, result) {
+  const status = data.refuelingStatus;
+  const minutes = data.minutesRemaining;
+  const waktuSisaStr = toHourMinute(minutes);
+  
+  if (status === "ALLOWED") {
+    result.className = "status-allowed";
+    result.innerHTML = `
+      <span class="result-status">
+        <span class="result-status-icon">✅</span>
+        <span class="result-unit">Pengisian diizinkan</span>
+        <span class="result-time">LINE ${line}</span>
+      </span>
+    `;
+    speak(`Pengisian diizinkan di line ${line}`, "success");
+  } else if (status === "DISALLOWED") {
+    let fullUnitNumber = decodedText;
+    let jamRefuel = "";
+    
+    // ✅ FIXED: Parse timestamp dari backend
+    if (data.allowedTimestampStr) {
+      console.log(`🔍 Backend send: ${data.allowedTimestampStr}`);
+      jamRefuel = parseTimestampSimple(data.allowedTimestampStr);
+      console.log(`✅ Frontend parse result: ${jamRefuel}`);
+    }
+    
+    const allowedLine = data.lineName || line;
+    result.className = "status-disallowed";
+    result.innerHTML = `
+      <span class="result-status">
+        <span class="result-status-icon">🚫</span>
+        <span class="result-unit">${fullUnitNumber} - Pengisian terakhir pukul ${jamRefuel} di line ${allowedLine}</span>
+        <span class="result-remain">Sisa ${waktuSisaStr} lagi</span>
+      </span>
+    `;
+    
+    const unitInti = extractUnitNumber(decodedText);
+    speak(`Mohon maaf unit ${unitInti} sudah melakukan pengisian pukul ${jamRefuel} di line ${allowedLine}`, "error");
+  } else if (status === "INVALID_QR") {
+    result.className = "status-invalid";
+    result.innerHTML = `<span class="result-status"><span class="result-status-icon">❌</span> Unit tidak terdaftar</span>`;
+    speak("Unit tidak terdaftar di sistem", "error");
+  }
+}
+
+function playBeep(type) {
+  try {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioContext.state === 'suspended') {
+      audioContext.resume().then(() => {
+        playBeepSound(audioContext, type);
+      });
+    } else {
+      playBeepSound(audioContext, type);
+    }
+  } catch (err) {
+    console.log("Beep error:", err);
+  }
+}
+
+function playBeepSound(audioContext, type) {
+  const osc = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+  osc.connect(gain);
+  gain.connect(audioContext.destination);
+  if (type === "scanning") {
+    osc.frequency.value = 800;
+    gain.gain.setValueAtTime(0.25, audioContext.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+    osc.start(audioContext.currentTime);
+    osc.stop(audioContext.currentTime + 0.2);
+  } else if (type === "success") {
+    osc.frequency.value = 900;
+    gain.gain.setValueAtTime(0.4, audioContext.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+    osc.start(audioContext.currentTime);
+    osc.stop(audioContext.currentTime + 0.15);
+    const osc2 = audioContext.createOscillator();
+    const gain2 = audioContext.createGain();
+    osc2.connect(gain2);
+    gain2.connect(audioContext.destination);
+    osc2.frequency.value = 1100;
+    gain2.gain.setValueAtTime(0.4, audioContext.currentTime + 0.25);
+    gain2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
+    osc2.start(audioContext.currentTime + 0.25);
+    osc2.stop(audioContext.currentTime + 0.4);
+  } else if (type === "error") {
+    osc.frequency.value = 400;
+    gain.gain.setValueAtTime(0.4, audioContext.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+    osc.start(audioContext.currentTime);
+    osc.stop(audioContext.currentTime + 0.2);
+    const osc2 = audioContext.createOscillator();
+    const gain2 = audioContext.createGain();
+    osc2.connect(gain2);
+    gain2.connect(audioContext.destination);
+    osc2.frequency.value = 400;
+    gain2.gain.setValueAtTime(0.4, audioContext.currentTime + 0.35);
+    gain2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.55);
+    osc2.start(audioContext.currentTime + 0.35);
+    osc2.stop(audioContext.currentTime + 0.55);
+    const osc3 = audioContext.createOscillator();
+    const gain3 = audioContext.createGain();
+    osc3.connect(gain3);
+    gain3.connect(audioContext.destination);
+    osc3.frequency.value = 400;
+    gain3.gain.setValueAtTime(0.4, audioContext.currentTime + 0.7);
+    gain3.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.9);
+    osc3.start(audioContext.currentTime + 0.7);
+    osc3.stop(audioContext.currentTime + 0.9);
+  }
+}
+</script>
+
+<!-- 🔧 SERVICE WORKER REGISTRATION -->
+<script>
+// 📱 Register Service Worker untuk PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js')
+      .then((registration) => {
+        console.log('✅ Service Worker registered:', registration);
+        
+        // Check untuk update setiap jam
+        setInterval(() => {
+          registration.update();
+        }, 60 * 60 * 1000); // 1 jam
+      })
+      .catch((error) => {
+        console.error('❌ Service Worker registration failed:', error);
+      });
+  });
+} else {
+  console.warn('⚠️ Service Worker not supported in this browser');
+}
+
+// 🔔 Listen untuk update tersedia
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('controller', () => {
+    console.log('📢 New Service Worker activated');
+  });
+}
+</script>
+
+</body>
+</html>
