@@ -527,7 +527,7 @@ const CREDS = {
 };
 
 // ✅ UPDATED URL - Apps Script V5.3
-const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycby8UncD-VWoFeeDgwjc4sjvfxf4DObbsHyC_c44c_SS8v4JAEheejCIgrAw2FN4wyIbGQ/exec";
+const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbzC_OKUo7FdoBYTTz669rNVAHn9itGaPw-g1J2yXQ9zGkDvZgvmzDS9h1q3gi7v8pN-/exec";
 
 let user = null, line = null, qr = null, scanning = false, lastCode = null;
 let cameraFacing = "environment";
@@ -971,7 +971,7 @@ async function processQRCode(decodedText, device, result, retryCount = 0) {
     if (retryCount < MAX_RETRIES && (err.name === 'AbortError' || !isOnline)) {
       result.className = "status-error";
       result.innerHTML = `<span class="result-status"><span class="result-status-icon">🔄</span> Retry ${retryCount + 1}/${MAX_RETRIES}...</span>`;
-      speak("Koneksi gagal. Mencoba ulang...", "error");
+      speak("Koneksi gagal. Mencoba lagi...", "error");
       setTimeout(() => {
         processQRCode(decodedText, device, result, retryCount + 1);
       }, 2000);
