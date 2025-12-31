@@ -1033,7 +1033,8 @@ function handleScanSuccess(data, decodedText, result) {
     `;
     speak(`Pengisian diizinkan di line ${line}`, "success");
   } else if (status === "DISALLOWED") {
-    let fullUnitNumber = decodedText;
+    //baris baru : untuk konversi barcode kedalam text
+    let fullUnitNumber = extractUnitNumber(decodedText);
     let jamRefuel = "";
     
     // ✅ FIXED: Parse timestamp dari backend
