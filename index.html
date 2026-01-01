@@ -627,9 +627,11 @@ let apiUrl = DEFAULT_API_URL;
 let validUnitIds = new Set();
 let refuelDB = {};
 
+// --- UPDATE BAGIAN ATAS SCRIPT ---
 window.addEventListener('online', () => {
   isOnline = true;
   document.getElementById('offlineBanner').classList.remove('show');
+  uploadPendingData(); // <--- BARIS BARU: Upload otomatis saat sinyal nyala
   loadRefuelDatabase();
 });
 
@@ -641,7 +643,10 @@ window.addEventListener('offline', () => {
 window.addEventListener("load", () => {
   if (!isOnline) {
     document.getElementById('offlineBanner').classList.add('show');
+  } else {
+    uploadPendingData(); // <--- BARIS BARU: Cek antrean saat aplikasi dibuka
   }
+  // ... sisa kode window load biarkan sama ...
   const s = localStorage.getItem("s");
   if(s) {
     const { u, l } = JSON.parse(s);
@@ -661,25 +666,35 @@ function extractUnitIdFromQR(qrData) {
 
 async function loadRefuelDatabase() {
   try {
-    if (!isOnline) return;
-    
-    const formData = new FormData();
-    formData.append("action", "getRefuelDB");
-    formData.append("line", line);
-    
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      body: formData
-    });
-    
-    const data = await response.json();
-    if (data.status === 'success') {
-      validUnitIds = new Set(data.refuelDB.validUnitIds || []);
-      refuelDB = data.refuelDB.units || {};
-      console.log(`✅ Loaded ${validUnitIds.size} valid units`);
+    // JIKA ONLINE: Download dari Server & Simpan ke HP
+    if (isOnline) {
+      const formData = new FormData();
+      formData.append("action", "getRefuelDB");
+      formData.append("line", line);
+      
+      const response = await fetch(apiUrl, { method: "POST", body: formData });
+      const data = await response.json();
+      
+      if (data.status === 'success') {
+        const units = data.refuelDB.validUnitIds || [];
+        validUnitIds = new Set(units);
+        localStorage.setItem('localUnitDB', JSON.stringify(units)); // <--- SIMPAN KE HP
+        console.log(`✅ Database Online: ${units.length} unit.`);
+      }
+    } 
+    // JIKA OFFLINE: Ambil dari Memori HP
+    else {
+      const localData = localStorage.getItem('localUnitDB');
+      if (localData) {
+        validUnitIds = new Set(JSON.parse(localData));
+        console.log(`📡 Database Offline: ${validUnitIds.size} unit.`);
+      }
     }
   } catch (err) {
-    console.error('loadRefuelDatabase error:', err);
+    console.error('Gagal load, coba ambil lokal:', err);
+    // Fallback ambil lokal jika error fetch
+    const localData = localStorage.getItem('localUnitDB');
+    if (localData) validUnitIds = new Set(JSON.parse(localData));
   }
 }
 
@@ -1001,41 +1016,25 @@ async function onScan(decodedText) {
 }
 
 async function processQRCode(decodedText, device, result, retryCount = 0) {
+  // JIKA OFFLINE: Langsung bypass (Izinkan Input)
+  if (!isOnline) {
+    processOfflineSuccess(decodedText, result);
+    return;
+  }
+
   try {
-    if (!isOnline) {
-      result.className = "status-error";
-      result.innerHTML = `<span class="result-status"><span class="result-status-icon">📡</span> Mode Offline</span>`;
-      const offlineData = JSON.parse(localStorage.getItem('offlineScans') || '[]');
-      offlineData.push({
-        qr: decodedText,
-        timestamp: new Date().toISOString(),
-        line: line
-      });
-      localStorage.setItem('offlineScans', JSON.stringify(offlineData));
-      speak("Mode offline - data disimpan lokal", "error");
-      return;
-    }
-    
     const formData = new FormData();
     formData.append("qrData", decodedText);
     formData.append("userAgent", navigator.userAgent);
     formData.append("device", device);
     formData.append("line", line);
     
+    // Timeout 10 detik agar tidak menunggu selamanya jika sinyal lemot
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
+    const timeout = setTimeout(() => controller.abort(), 10000);
     
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      body: formData,
-      signal: controller.signal
-    });
-    
+    const response = await fetch(apiUrl, { method: "POST", body: formData, signal: controller.signal });
     clearTimeout(timeout);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
     
     const data = await response.json();
     
@@ -1044,36 +1043,30 @@ async function processQRCode(decodedText, device, result, retryCount = 0) {
     } else if (data.refuelingStatus === "INVALID_QR") {
       result.className = "status-invalid";
       result.innerHTML = `<span class="result-status"><span class="result-status-icon">❌</span> ${data.message}</span>`;
-      speak(data.message || "Unit tidak valid", "error");
+      speak(data.message, "error");
     } else {
-      result.className = "status-error";
-      result.innerHTML = `<span class="result-status"><span class="result-status-icon">❌</span> ${data.message || "Error"}</span>`;
-      speak(data.message || "Terjadi kesalahan", "error");
+      // Disallowed dll
+      handleScanSuccess(data, decodedText, result);
     }
   } catch (err) {
-    console.error("API Error:", err.message);
-    if (retryCount < MAX_RETRIES && (err.name === 'AbortError' || !isOnline)) {
-      result.className = "status-error";
-      result.innerHTML = `<span class="result-status"><span class="result-status-icon">🔄</span> Retry ${retryCount + 1}/${MAX_RETRIES}...</span>`;
-      speak("Koneksi gagal. Mencoba lagi...", "error");
-      setTimeout(() => {
-        processQRCode(decodedText, device, result, retryCount + 1);
-      }, 2000);
-    } else {
-      result.className = "status-error";
-      result.innerHTML = `<span class="result-status"><span class="result-status-icon">❌</span> Koneksi gagal</span>`;
-      speak("Koneksi gagal. Periksa jaringan anda", "error");
-    }
+    console.warn("Gagal koneksi server, masuk mode offline:", err);
+    // JIKA ERROR KONEKSI: Anggap Offline & Izinkan Input
+    processOfflineSuccess(decodedText, result);
   }
-  
-  setTimeout(() => {
-    if (qr && scanning) {
-      qr.stop().then(() => {
-        qr.clear();
-        scanning = false;
-      }).catch(() => {});
-    }
-  }, 2000);
+}
+
+// Tambahkan Fungsi Kecil Ini di bawah processQRCode
+function processOfflineSuccess(qrText, result) {
+    const unitId = extractUnitNumber(qrText);
+    const fakeData = {
+        refuelingStatus: "ALLOWED",
+        unitId: unitId,
+        unitName: "OFFLINE MODE", 
+        minutesRemaining: 0
+    };
+    result.innerHTML = `<span class="result-status"><span class="result-status-icon">📡</span> Offline Mode</span>`;
+    speak("Mode offline. Silakan input liter.");
+    handleScanSuccess(fakeData, qrText, result);
 }
 
 function handleScanSuccess(data, decodedText, result) {
@@ -1208,45 +1201,155 @@ function playBeepSound(audioContext, type) {
     osc3.stop(audioContext.currentTime + 0.9);
   }
 }
+
 // FUNGSI UNTUK MENGIRIM DATA LITER KE SPREADSHEET
+
+// 🔥 UPDATE FUNGSI SUBMIT (LOGIKA FIX)
 async function submitFinalData() {
   const literInput = document.getElementById('literInput');
   const literValue = literInput.value;
   const btn = document.getElementById('saveLiterBtn');
   
+  // 1. Validasi Input
   if (!literValue || literValue <= 0) {
     alert("⚠️ Mohon masukkan jumlah liter yang valid!");
     literInput.focus();
+    return;
+  }
+
+  // 2. Validasi Unit ID (Penting jika halaman habis direfresh)
+  if (!currentUnitId) {
+    alert("⚠️ Data unit hilang. Mohon scan ulang!");
+    location.reload();
     return;
   }
   
   btn.disabled = true;
   btn.innerHTML = "⏳ MENYIMPAN...";
 
+  // 3. Siapkan Data Paket
+  const payload = {
+    unitId: currentUnitId,
+    liter: literValue,
+    line: user, // Pastikan variabel 'user' sudah ada (Bays 1/2/3)
+    device: "Mobile",
+    timestamp: new Date().getTime()
+  };
+
+  // --- FUNGSI SIMPAN OFFLINE (HELPER) ---
+  const saveOffline = () => {
+      let queue = JSON.parse(localStorage.getItem('pendingRefuels') || '[]');
+      queue.push(payload);
+      localStorage.setItem('pendingRefuels', JSON.stringify(queue));
+      
+      alert("📡 SINYAL HILANG: Data disimpan di HP.\nAkan otomatis terupload saat sinyal kembali.");
+      location.reload();
+  };
+
+  // 4. CEK KONEKSI (Pakai navigator.onLine agar lebih aman)
+  if (!navigator.onLine) {
+    saveOffline();
+    return;
+  }
+
+  // 5. PROSES ONLINE
   try {
     const formData = new FormData();
     formData.append("action", "submitRefuel");
-    formData.append("unitId", currentUnitId); 
-    formData.append("liter", literValue);
-    formData.append("line", user); // Pastikan variabel 'user' berisi Bays 1/2/3
-    formData.append("device", "Mobile");
+    formData.append("unitId", payload.unitId);
+    formData.append("liter", payload.liter);
+    formData.append("line", payload.line);
+    formData.append("device", payload.device);
 
     const response = await fetch(apiUrl, { method: "POST", body: formData });
     const resData = await response.json();
 
     if (resData.status === "success") {
-      alert("✅ BERHASIL!\nData pengisian " + literValue + " Liter untuk Unit " + currentUnitId + " telah dicatat.");
-      location.reload(); 
+      // ✅ SUKSES
+      alert("✅ BERHASIL TERKIRIM!");
+      location.reload();
     } else {
-      throw new Error(resData.message || "Gagal menyimpan");
+      // ❌ GAGAL DARI SERVER (Data Ditolak)
+      // Jangan simpan offline! Tampilkan error saja.
+      alert("❌ Gagal Menyimpan: " + (resData.message || "Unknown Error"));
+      btn.disabled = false;
+      btn.innerHTML = "SIMPAN DATA";
     }
 
   } catch (err) {
-    alert("❌ GAGAL MENYIMPAN!\nPeriksa koneksi internet Anda.");
-    btn.disabled = false;
-    btn.innerHTML = "SIMPAN DATA";
+    // ⚠️ GAGAL KONEKSI (Network Error / Fetch Failed)
+    // Baru simpan ke offline queue di sini
+    console.warn("Gagal koneksi, alihkan ke offline:", err);
+    saveOffline();
   }
 }
+
+// 🔥 5. FUNGSI SINKRONISASI DATA (Upload Otomatis)
+async function uploadPendingData() {
+    // 1. Cek apakah ada data di "Tabungan" HP
+    let queue = JSON.parse(localStorage.getItem('pendingRefuels') || '[]');
+    
+    // Jika kosong, berhenti (tidak ada yg perlu diupload)
+    if (queue.length === 0) return;
+
+    // 2. Ubah Banner jadi Info Upload (Warna Biru)
+    const banner = document.getElementById('offlineBanner');
+    banner.textContent = `🔄 Sedang mengupload ${queue.length} data tertunda...`;
+    banner.classList.add('show');
+    banner.style.backgroundColor = "#DBEAFE"; // Biru Muda
+    banner.style.color = "#1E40AF";           // Biru Tua
+
+    let failedQueue = []; // Wadah untuk data yang (masih) gagal terkirim
+
+    // 3. Loop: Kirim satu per satu
+    for (const item of queue) {
+        try {
+            const formData = new FormData();
+            formData.append("action", "submitRefuel");
+            formData.append("unitId", item.unitId);
+            formData.append("liter", item.liter);
+            formData.append("line", item.line);
+            // Tambahkan tanda bahwa ini data hasil sync
+            formData.append("device", "Mobile (Synced)"); 
+            // Opsional: Kirim timestamp asli saat scan (agar laporan akurat)
+            // formData.append("timestamp", item.timestamp); 
+
+            await fetch(apiUrl, { method: "POST", body: formData });
+            console.log(`✅ Synced: ${item.unitId}`);
+            
+        } catch (err) {
+            console.error(`❌ Gagal sync unit ${item.unitId}:`, err);
+            // Jika gagal lagi (misal sinyal putus nyambung), masukkan kembali ke antrean
+            failedQueue.push(item); 
+        }
+    }
+
+    // 4. Simpan sisa yang gagal (jika ada) kembali ke memori HP
+    localStorage.setItem('pendingRefuels', JSON.stringify(failedQueue));
+
+    // 5. Update Status Banner
+    if (failedQueue.length === 0) {
+        // SUKSES SEMUA
+        banner.textContent = "✅ Semua data offline berhasil terkirim!";
+        banner.style.backgroundColor = "#D1FAE5"; // Hijau Muda
+        banner.style.color = "#065F46";           // Hijau Tua
+        
+        // Hilangkan banner setelah 3 detik
+        setTimeout(() => {
+            banner.classList.remove('show');
+            // Reset ke tampilan default offline (Kuning)
+            banner.textContent = "📡 Mode Offline - Data disimpan lokal";
+            banner.style.backgroundColor = "#FEF3C7"; 
+            banner.style.color = "#92400E";
+        }, 3000);
+    } else {
+        // MASIH ADA SISA
+        banner.textContent = `⚠️ Sisa ${failedQueue.length} data belum terkirim. Coba cari sinyal lebih kuat.`;
+        banner.style.backgroundColor = "#FEE2E2"; // Merah Muda
+        banner.style.color = "#991B1B";
+    }
+}
+
 </script>
 
 <!-- 🔧 SERVICE WORKER REGISTRATION -->
