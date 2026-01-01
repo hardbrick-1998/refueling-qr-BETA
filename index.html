@@ -486,6 +486,33 @@
       .qr-display-area { padding: 18px; }
       .action-btns button { width: 50px; height: 50px; font-size: 20px; }
     }
+    
+    /* Style untuk Input Quantity Liter */
+    #literInput {
+      width: 100%;
+      height: 80px;
+      font-size: 40px;
+      font-weight: 800;
+      text-align: center;
+      border: 3px solid #3B82F6;
+      border-radius: 20px;
+      margin: 20px 0;
+      color: #1F2937;
+      background-color: #F0F9FF;
+    }
+
+    .btn-save-liter {
+      background: linear-gradient(135deg, #10B981 0%, #059669 100%) !important;
+      font-size: 18px !important;
+      height: 55px;
+      width: 100%;
+      border-radius: 12px;
+      color: white;
+      border: none;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
   </style>
 </head>
 <body>
@@ -545,11 +572,27 @@
         </div>
       </div>
     </div>
+    <div id="quantityArea" style="display: none; background: white; border-radius: 24px; padding: 30px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.1); margin-top: 10px;">
+    <h2 style="color: #1F2937; margin-bottom: 5px; font-size: 20px;">Input Quantity</h2>
+    <p style="color: #6B7280; font-size: 13px;">Masukkan jumlah liter untuk unit:</p>
+    <div id="targetUnitDisplay" style="background: #EFF6FF; padding: 10px; border-radius: 12px; margin: 10px 0;">
+        <p id="targetUnitID" style="font-weight: 800; color: #3B82F6; font-size: 18px; margin: 0;">-</p>
+        <p id="targetUnitSpec" style="font-size: 12px; color: #64748b; margin: 0;">-</p>
+    </div>
+    
+    <input type="number" id="literInput" inputmode="numeric" placeholder="0">
+    
+    <button onclick="submitFinalData()" class="login-btn btn-save-liter" id="saveLiterBtn">SIMPAN DATA</button>
+    <button onclick="location.reload()" style="background:none; border:none; color:#9CA3AF; margin-top:20px; cursor:pointer; font-weight:600;">BATAL / KEMBALI</button>
+    </div>
   </div>
   <div class="scanner-footer">© 2025 Refueling QR System | Logistik Hauling MACO</div>
 </div>
 
 <script>
+
+let currentUnitId = null; // <--- TEMPELKAN DI SINI (Variabel Global)
+
 const CREDS = {
   "bays 1": { pwd: "qwerty", line: "A" },
   "bays 2": { pwd: "asdfgh", line: "B" },
@@ -557,7 +600,7 @@ const CREDS = {
 };
 
 // ✅ UPDATED URL - Apps Script V12.3
-const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbzZH05XW0rZCdBatVzL5CBpILj2XMrjWOonnEtYEPwvQlmTXV8b5qcoPJbksB8FgeZ0/exec";
+const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbxBJGXDhMP0DqHMwNDufKBk0e7zGI0DAkIgkwe6d8tlXAbVFuzU121jiGttMJl36J1-/exec";
 
 let user = null, line = null, qr = null, scanning = false, lastCode = null;
 let cameraFacing = "environment";
@@ -1022,17 +1065,36 @@ function handleScanSuccess(data, decodedText, result) {
   const minutes = data.minutesRemaining;
   const waktuSisaStr = toHourMinute(minutes);
   
-  if (status === "ALLOWED") {
-    result.className = "status-allowed";
-    result.innerHTML = `
-      <span class="result-status">
-        <span class="result-status-icon">✅</span>
-        <span class="result-unit">Pengisian diizinkan</span>
-        <span class="result-time">LINE ${line}</span>
-      </span>
-    `;
-    speak(`Pengisian diizinkan di line ${line}`, "success");
+ if (status === "ALLOWED") {
+    // 1. Sembunyikan area scanner agar layar tidak penuh
+    document.querySelector('.qr-display-area').style.display = 'none';
+    
+    // 2. Munculkan area input quantity liter
+    document.getElementById('quantityArea').style.display = 'block';
+    
+    // 3. Tampilkan identitas unit yang sedang diproses
+    document.getElementById('targetUnitID').textContent = data.unitId;
+    document.getElementById('targetUnitSpec').textContent = data.unitName;
+    
+    // 4. Simpan Unit ID ke kantong (Variabel Global) untuk dikirim nanti
+    currentUnitId = data.unitId; 
+    
+    // 5. Matikan kamera (Penting!)
+    stopScan(); 
+    
+    // 6. Feedback suara dan beep
+    playBeep("success");
+    speak(`Unit ${data.unitId} diizinkan. Silakan masukkan jumlah liter.`, "success");
+    
+    // 7. Otomatis arahkan kursor ke kotak liter agar keyboard HP muncul
+    setTimeout(() => { 
+      const inputLiter = document.getElementById('literInput');
+      inputLiter.focus();
+      inputLiter.click(); 
+    }, 500);
+
   } else if (status === "DISALLOWED") {
+     // ... (Sisanya ke bawah tetap pakai kodingan lama kamu) {
     //baris baru : untuk konversi barcode kedalam text
     let fullUnitNumber = extractUnitNumber(decodedText);
     let jamRefuel = "";
@@ -1128,6 +1190,45 @@ function playBeepSound(audioContext, type) {
     gain3.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.9);
     osc3.start(audioContext.currentTime + 0.7);
     osc3.stop(audioContext.currentTime + 0.9);
+  }
+}
+// FUNGSI UNTUK MENGIRIM DATA LITER KE SPREADSHEET
+async function submitFinalData() {
+  const literInput = document.getElementById('literInput');
+  const literValue = literInput.value;
+  const btn = document.getElementById('saveLiterBtn');
+  
+  if (!literValue || literValue <= 0) {
+    alert("⚠️ Mohon masukkan jumlah liter yang valid!");
+    literInput.focus();
+    return;
+  }
+  
+  btn.disabled = true;
+  btn.innerHTML = "⏳ MENYIMPAN...";
+
+  try {
+    const formData = new FormData();
+    formData.append("action", "submitRefuel");
+    formData.append("unitId", currentUnitId); 
+    formData.append("liter", literValue);
+    formData.append("line", user); // Pastikan variabel 'user' berisi Bays 1/2/3
+    formData.append("device", "Mobile");
+
+    const response = await fetch(apiUrl, { method: "POST", body: formData });
+    const resData = await response.json();
+
+    if (resData.status === "success") {
+      alert("✅ BERHASIL!\nData pengisian " + literValue + " Liter untuk Unit " + currentUnitId + " telah dicatat.");
+      location.reload(); 
+    } else {
+      throw new Error(resData.message || "Gagal menyimpan");
+    }
+
+  } catch (err) {
+    alert("❌ GAGAL MENYIMPAN!\nPeriksa koneksi internet Anda.");
+    btn.disabled = false;
+    btn.innerHTML = "SIMPAN DATA";
   }
 }
 </script>
