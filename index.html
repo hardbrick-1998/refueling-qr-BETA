@@ -1003,22 +1003,47 @@ function stopScan() {
 async function onScan(decodedText) {
   if(decodedText === lastCode) return;
   lastCode = decodedText;
+  
   const result = document.getElementById("result");
   result.className = "";
   
+  // 1. Ambil ID Unit Bersih
   const extractedUnit = extractUnitIdFromQR(decodedText);
   result.innerHTML = `<span class="result-status"><span class="result-status-icon">✓</span> QR: ${extractedUnit}</span>`;
   playBeep("scanning");
   
+  // 2. Cek apakah unit terdaftar di Database
   if (!isValidUnitFrontend(decodedText)) {
     result.className = "status-invalid";
     result.innerHTML = `<span class="result-status"><span class="result-status-icon">❌</span> Unit tidak terdaftar!</span>`;
-    speak("Unit tidak terdaftar di sistem", "error");
-    playBeep("error");
+    speak("Unit tidak terdaftar", "error");
     stopScan();
     return;
   }
+
+  // 🔥 3. (BARU) CEK HISTORY LOKAL (OFFLINE GUARD) 🔥
+  const localCheck = checkLocalHistoryAllowed(extractedUnit);
   
+  if (!localCheck.allowed) {
+      // JIKA DITOLAK OLEH HP (Belum 8 Jam)
+      const sisaWaktu = toHourMinute(localCheck.minutesRemaining);
+      const jamTerakhir = localCheck.lastTime.getHours().toString().padStart(2, '0') + ":" + localCheck.lastTime.getMinutes().toString().padStart(2, '0');
+      
+      result.className = "status-disallowed";
+      result.innerHTML = `
+        <span class="result-status">
+          <span class="result-status-icon">⛔</span>
+          <span class="result-unit">${extractedUnit} (OFFLINE GUARD)</span>
+          <span class="result-remain">Baru isi jam ${jamTerakhir}. Tunggu ${sisaWaktu} lagi.</span>
+        </span>
+      `;
+      speak(`Ditolak. Unit ini baru saja mengisi.`, "error");
+      playBeep("error");
+      stopScan(); // Hentikan scan agar petugas sadar
+      return; // Stop di sini, jangan lanjut ke server!
+  }
+
+  // 4. Jika lolos semua cek, baru proses (Online/Offline)
   const device = /Mobi|Android/i.test(navigator.userAgent) ? "Mobile" : "Desktop";
   apiRetryCount = 0;
   processQRCode(decodedText, device, result);
@@ -1241,6 +1266,10 @@ async function submitFinalData() {
     location.reload();
     return;
   }
+
+  // 🔥 (BARU) CATAT JAM PENGISIAN DI MEMORI HP SEKARANG JUGA 🔥
+  saveLocalHistory(currentUnitId); 
+  // -----------------------------------------------------------
   
   btn.disabled = true;
   btn.innerHTML = "⏳ MENYIMPAN...";
@@ -1366,6 +1395,42 @@ async function uploadPendingData() {
         banner.style.backgroundColor = "#FEE2E2"; // Merah Muda
         banner.style.color = "#991B1B";
     }
+}
+
+// ==========================================
+// 🧠 FITUR OFFLINE: CEK INTERVAL 8 JAM (LOCAL MEMORY)
+// ==========================================
+const REFUEL_INTERVAL_HOURS = 8; // Atur durasi interval di sini
+
+function saveLocalHistory(unitId) {
+    let history = JSON.parse(localStorage.getItem('unitHistory') || '{}');
+    history[unitId] = new Date().getTime(); // Simpan jam sekarang
+    localStorage.setItem('unitHistory', JSON.stringify(history));
+    console.log(`💾 History tersimpan lokal untuk: ${unitId}`);
+}
+
+function checkLocalHistoryAllowed(unitId) {
+    let history = JSON.parse(localStorage.getItem('unitHistory') || '{}');
+    const lastRefuel = history[unitId];
+
+    if (!lastRefuel) return { allowed: true }; // Belum pernah isi di HP ini
+
+    const now = new Date().getTime();
+    const diffMs = now - lastRefuel;
+    const diffHours = diffMs / (1000 * 60 * 60);
+
+    if (diffHours < REFUEL_INTERVAL_HOURS) {
+        // Hitung sisa waktu
+        const remainingMs = (REFUEL_INTERVAL_HOURS * 60 * 60 * 1000) - diffMs;
+        const remainingMinutes = Math.ceil(remainingMs / (1000 * 60));
+        return { 
+            allowed: false, 
+            minutesRemaining: remainingMinutes,
+            lastTime: new Date(lastRefuel) 
+        };
+    }
+
+    return { allowed: true };
 }
 
 </script>
