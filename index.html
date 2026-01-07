@@ -607,6 +607,9 @@
 
 <script>
 
+// ✅ UPDATED URL - Apps Script V20.0
+const DEFAULT_API_URL = "https://script.google.com/macros/library/d/1oNfoknXbqrtl6rV7hgKI7ffWw0oMKS23GHmEY2XpTsWhLBH3JcpwYKA9/25";
+
 let currentUnitId = null; // <--- TEMPELKAN DI SINI (Variabel Global)
 
 const CREDS = {
@@ -615,8 +618,6 @@ const CREDS = {
   "bays 3": { pwd: "12345", line: "C" }
 };
 
-// ✅ UPDATED URL - Apps Script V20.0
-const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbwckKPDzFYvp5Zl2TDElE8HIB9k2vbk6PEgy-Q58MadRUHZyKyFmdV2uE0lmdUHGPOE/exec";
 
 let user = null, line = null, qr = null, scanning = false, lastCode = null;
 let cameraFacing = "environment";
