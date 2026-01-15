@@ -1,8 +1,8 @@
 {
-  "name": "BARCODE REFUELING",
-  "short_name": "REFUELING",
+  "name": "BARCODE REFUELING (BETA)",
+  "short_name": "QR REFUELING (BETA)",
   "description": "Aplikasi Scan & Input Bahan Bakar Site MACO",
-  "start_url": "./index.html",
+  "start_url": "./index (BETA).html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",

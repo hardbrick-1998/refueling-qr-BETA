@@ -1,11 +1,11 @@
 // 🚀 SERVICE WORKER - V2.0 (MACO OFFLINE READY)
-const CACHE_NAME = 'refuel-maco-v12.4'; // Ganti versi jika ada update besar
+const CACHE_NAME = 'refuel-maco-v26.0 (BETA)'; // Ganti versi jika ada update besar
 
 // 📋 Assets yang WAJIB disimpan di memori HP
 // Jika salah satu gagal didownload, installasi offline akan gagal.
 const URLS_TO_CACHE = [
   './',                // Root folder
-  './index.html',      // File utama
+  './index (BETA).html',      // File utama
   './manifest.json',   // Manifest PWA
   './PITSTOP-39.png',  // Background Image (Pastikan file ini ada!)
   './icon-qr-refueling.png', //icon untuk aplikasinya

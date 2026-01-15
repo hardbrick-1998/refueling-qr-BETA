@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>BARCODE REFUELING MACO HAULING - Version 20.0</title>
+    <title>BARCODE REFUELING MACO HAULING - BETA VERSION</title>
   
   <!-- 🔗 PWA MANIFEST LINK -->
   <link rel="manifest" href="manifest.json">
@@ -573,30 +573,61 @@
         </div>
       </div>
 
-      <div id="quantityArea" style="display: none; background: white; border-radius: 24px; padding: 25px 20px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.08); width: 100%; margin: 0 auto; box-sizing: border-box;">
+        <div id="quantityArea" style="display: none; background: white; border-radius: 24px; padding: 30px 15px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.08); width: 100%; margin: 0 auto; box-sizing: border-box;">
         
-        <h2 style="color: #1F2937; font-size: 20px; margin-bottom: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">INPUT JUMLAH LITER</h2>
-        
-        <p style="color: #6B7280; font-size: 13px; margin-bottom: 20px; line-height: 1.5;">Masukkan jumlah liter pengisian pada unit :</p>
-        
-        <div id="targetUnitDisplay" style="background: #EFF6FF; padding: 15px; border-radius: 16px; margin-bottom: 25px; border: 2px dashed #BFDBFE;">
-            <span id="targetUnitID" style="display:block; font-weight: 800; color: #1D4ED8; font-size: 26px; letter-spacing: 1px;">-</span>
-            <span id="targetUnitSpec" style="display:block; font-weight: 600; color: #64748B; font-size: 12px; text-transform: uppercase; margin-top: 5px;">-</span>
-        </div>
-        
-        <div style="display: flex; justify-content: center; width: 100%; margin-bottom: 10px;">
-            <input type="number" id="literInput" inputmode="numeric" placeholder="0" style="text-align: center;">
-        </div>
-        
-        <button onclick="submitFinalData()" class="login-btn btn-save-liter" id="saveLiterBtn" style="margin-top: 15px; width: 100%; height: 55px; font-size: 18px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);">SIMPAN DATA</button>
-        
-        <div style="margin-top: 15px;">
-            <button onclick="location.reload()" style="background-color: #EF4444; color: white; border: none; border-radius: 12px; width: 100%; padding: 12px; font-weight: 700; font-size: 14px; cursor: pointer; box-shadow: 0 4px 10px rgba(239, 68, 68, 0.2); transition: all 0.2s;">
-                ❌ BATAL / KEMBALI
-            </button>
+    <p style="text-align: center; color: #4B5563; font-size: 15px; font-weight: 600; margin-bottom: 15px; letter-spacing: 0.5px;">
+        Silahkan isi Data untuk unit berikut!
+    </p>
+
+    <div id="targetUnitDisplay" style="background: #EFF6FF; padding: 15px; border-radius: 16px; margin-bottom: 30px; border: 2px dashed #BFDBFE;">
+        <span id="targetUnitID" style="display:block; font-weight: 800; color: #1D4ED8; font-size: 26px; letter-spacing: 1px;">-</span>
+        <span id="targetUnitSpec" style="display:block; font-weight: 600; color: #64748B; font-size: 12px; text-transform: uppercase; margin-top: 5px;">-</span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; align-items: center; width: 100%;">
+
+        <div style="width: 310px; margin-bottom: 25px;">
+            <label style="color: #059669; font-size: 14px; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 8px; text-align: left; padding-left: 85px;">
+                ISI SOLAR (LITER)
+            </label>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div style="width: 70px; height: 75px; display: flex; align-items: center; justify-content: center;">
+                    <span style="font-size: 60px; line-height: 1;">⛽</span>
+                </div>
+                <input type="number" id="literInput" inputmode="numeric" placeholder="0" max="333"
+                       oninput="checkLiterLimit(this)"
+                       style="width: 220px; height: 75px; font-size: 40px; font-weight: 800; text-align: center; border: 3px solid #10B981; border-radius: 16px; color: #064E3B; background-color: #ECFDF5;">
+            </div>
+            <div id="literWarning" style="color: #DC2626; font-size: 12px; font-weight: bold; display: none; margin-top: 5px; background: #FEE2E2; padding: 5px; border-radius: 8px;">
+                ⚠️ Maksimal 333 Liter!
+            </div>
         </div>
 
-      </div>
+        <div style="width: 310px; margin-bottom: 30px;">
+            <label style="color: #1F2937; font-size: 14px; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 8px; text-align: left; padding-left: 85px;">
+                INPUT HOURS METER (HM) <span style="color: #DC2626; font-size: 18px;">*</span>
+            </label>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div style="width: 70px; height: 75px; display: flex; align-items: center; justify-content: center;">
+                    <span style="font-size: 60px; line-height: 1;">⚙️</span>
+                </div>
+                <input type="number" id="hmInput" inputmode="decimal" placeholder="0.0" step="0.1" required
+                       style="width: 220px; height: 75px; font-size: 35px; font-weight: 800; text-align: center; border: 3px solid #3B82F6; border-radius: 16px; color: #1E3A8A; background-color: #EFF6FF;">
+            </div>
+        </div>
+
+    </div>
+
+    <button onclick="submitFinalData()" class="login-btn btn-save-liter" id="saveLiterBtn" style="margin-top: 10px; width: 100%; height: 60px; font-size: 20px; letter-spacing: 1px; box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);">
+        SIMPAN DATA
+    </button>
+    
+    <div style="margin-top: 15px;">
+        <button onclick="location.reload()" style="background-color: #EF4444; color: white; border: none; border-radius: 12px; width: 100%; padding: 12px; font-weight: 700; font-size: 14px; cursor: pointer;">
+            ❌ BATAL / KEMBALI
+        </button>
+    </div>
+</div>
 
       </div>
 
@@ -607,6 +638,7 @@
 
 <script>
 
+let isSyncing = false; // Kunci untuk mencegah duplikasi pengiriman antreans
 let currentUnitId = null; // <--- TEMPELKAN DI SINI (Variabel Global)
 
 const CREDS = {
@@ -616,7 +648,7 @@ const CREDS = {
 };
 
 // ✅ UPDATED URL - Apps Script V20.0
-const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbySP4wI_yjZ_iessiQcQcmlkFX7871_ihcVllfjESOXnNVhTN73lyrScwnsTs5Sirvv/exec";
+const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbxLUtIoFTzVwDnhzLdYMpY-VB3QiB0m_tFjPqV-vab5PW-l0wl3PuMPO9KScHV1yaQH9w/exec";
 
 let user = null, line = null, qr = null, scanning = false, lastCode = null;
 let cameraFacing = "environment";
@@ -1031,7 +1063,7 @@ async function onScan(decodedText) {
       
       // 🔥 INI BARIS BARU YANG WAJIB DITAMBAHKAN 🔥
       // Fungsinya: Simpan laporan "Ditolak" ke antrean upload
-      queueOfflineRejection(extractedUnit, "INTERVAL BELUM TERCAPAI (OFFLINE)"); 
+      reportRejectionDirectly(extractedUnit, "INTERVAL BELUM TERCAPAI");
       // ----------------------------------------------------
 
       result.className = "status-disallowed";
@@ -1141,7 +1173,7 @@ function handleScanSuccess(data, decodedText, result) {
     
     // 6. Feedback suara dan beep
     playBeep("success");
-    speak(`Unit ${data.unitId} diizinkan. Silakan masukkan jumlah liter.`, "success");
+    speak(`Unit ${data.unitId} diizinkan. Silahkan lengkapi data pengisian.`, "success");
     
     // 7. Otomatis arahkan kursor ke kotak liter agar keyboard HP muncul
     setTimeout(() => { 
@@ -1250,66 +1282,149 @@ function playBeepSound(audioContext, type) {
   }
 }
 
-// FUNGSI UNTUK MENGIRIM DATA LITER KE SPREADSHEET
 
-// 🔥 UPDATE FUNGSI SUBMIT (LOGIKA FIX)
+
+// ==========================================
+// fungsi pengecekan quantity liter
+// ==========================================
+function checkLiterLimit(input) {
+    const maxLiter = 333;
+    const warningText = document.getElementById("literWarning");
+    const val = parseFloat(input.value);
+
+    if (val > maxLiter) {
+        input.style.borderColor = "red";
+        input.style.backgroundColor = "#FEF2F2";
+        warningText.style.display = "block";
+    } else {
+        input.style.borderColor = "#10B981"; // Kembali Hijau
+        input.style.backgroundColor = "#ECFDF5";
+        warningText.style.display = "none";
+    }
+}
+
+// 🔥 UPDATE FUNGSI SUBMIT (LOGIKA FIX & BERSIH)
 async function submitFinalData() {
   const literInput = document.getElementById('literInput');
+  const hmInput = document.getElementById('hmInput'); // Ambil elemen HM
   const literValue = literInput.value;
+  const hmValue = hmInput.value; // Ambil nilai HM
   const btn = document.getElementById('saveLiterBtn');
   
-  // 1. Validasi Input
+  // 1. VALIDASI WAJIB : INPUT LITER
   if (!literValue || literValue <= 0) {
-    alert("⚠️ Mohon masukkan jumlah liter yang valid!");
+    alert("⚠️ ERROR: Jumlah LITER wajib diisi!");
     literInput.focus();
     return;
   }
 
-  // 2. Validasi Unit ID (Penting jika halaman habis direfresh)
+  // 2. VALIDASI TIDAK BOLEH LEBIH DARI 333 LITER
+  if (literValue > 333) {
+    alert("⛔ DITOLAK: Maksimal pengisian adalah 333 Liter!");
+    literInput.style.borderColor = "red";
+    literInput.focus();
+    return; // Berhenti di sini, data tidak terkirim
+  }
+
+  // 3. VALIDASI WAJIB: HM (Hour Meter)
+  if (!hmValue || hmValue <= 0) {
+    alert("⚠️ ERROR: HOUR METER (HM) wajib diisi!");
+    hmInput.focus(); // Arahkan kursor ke kotak HM
+    return;
+  }
+
+  // 4. Validasi Unit ID (Penting jika halaman habis direfresh)
   if (!currentUnitId) {
     alert("⚠️ Data unit hilang. Mohon scan ulang!");
     location.reload();
     return;
   }
 
-  // 🔥 (BARU) CATAT JAM PENGISIAN DI MEMORI HP SEKARANG JUGA 🔥
+  // 🔥 CATAT JAM PENGISIAN DI MEMORI HP SEKARANG JUGA 🔥
   saveLocalHistory(currentUnitId); 
-  // -----------------------------------------------------------
   
   btn.disabled = true;
   btn.innerHTML = "⏳ MENYIMPAN...";
 
-  // 3. Siapkan Data Paket
+  // 4. Siapkan Data Paket (HANYA SEKALI DEKLARASI)
   const payload = {
     unitId: currentUnitId,
     liter: literValue,
-    line: user, // Pastikan variabel 'user' sudah ada (Bays 1/2/3)
-    device: "Mobile",
+    hm: hmValue, // ✅ HM Masuk ke Paket
+    line: user, 
+    device: "Mobile Trial",
     timestamp: new Date().getTime()
   };
 
   // --- FUNGSI SIMPAN OFFLINE (HELPER) ---
+  // 4. LOGIKA PENGIRIMAN CERDAS
   const saveOffline = () => {
       let queue = JSON.parse(localStorage.getItem('pendingRefuels') || '[]');
       queue.push(payload);
       localStorage.setItem('pendingRefuels', JSON.stringify(queue));
       
-      alert("📡 SINYAL HILANG: Data disimpan di HP.\nAkan otomatis terupload saat sinyal kembali.");
+      // Ganti alert menjadi toast agar tidak menghentikan alur kerja
+      showLargeToast("📡 MODE OFFLINE", "Sinyal lemah, data disimpan di HP. Akan otomatis terkirim saat sinyal kembali.");
       location.reload();
   };
 
-  // 4. CEK KONEKSI (Pakai navigator.onLine agar lebih aman)
-  if (!navigator.onLine) {
-    saveOffline();
-    return;
-  }
-
-  // 5. PROSES ONLINE
+  // Langsung coba proses online (Tanpa cek navigator.onLine di awal)
+  
+  // --- MULAI DARI SINI ---
   try {
     const formData = new FormData();
     formData.append("action", "submitRefuel");
     formData.append("unitId", payload.unitId);
     formData.append("liter", payload.liter);
+    formData.append("hm", payload.hm);
+    formData.append("line", payload.line);
+    formData.append("device", payload.device);
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000); 
+
+    const response = await fetch(apiUrl, { method: "POST", body: formData, signal: controller.signal });
+    clearTimeout(timeout);
+    
+    const resData = await response.json();
+
+    if (resData.status === "success") {
+      // ✅ JIKA SUKSES: Baru catat history 8 jam di HP agar tidak bisa scan lagi
+      saveLocalHistory(currentUnitId); 
+      
+      alert("✅ DATA BERHASIL TERKIRIM!");
+      location.reload(); // Segarkan halaman untuk membersihkan memori
+    } else {
+      alert("❌ Ditolak Server: " + (resData.message || "Error"));
+      btn.disabled = false;
+      btn.innerHTML = "SIMPAN DATA";
+    }
+
+  } catch (err) {
+    // ⚠️ JIKA GAGAL (OFFLINE / TIMEOUT):
+    console.warn("Koneksi gagal, beralih ke mode offline:", err);
+    
+    // 1. Catat history 8 jam di HP agar unit tidak scan dobel saat offline
+    saveLocalHistory(currentUnitId); 
+    
+    // 2. Masukkan ke antrean offline (Pending Refuels)
+    saveOffline(); 
+  }
+  // --- SAMPAI DI SINI ---
+
+  // 5. CEK KONEKSI
+  if (!navigator.onLine) {
+    saveOffline();
+    return;
+  }
+
+  // 6. PROSES ONLINE
+  try {
+    const formData = new FormData();
+    formData.append("action", "submitRefuel");
+    formData.append("unitId", payload.unitId);
+    formData.append("liter", payload.liter);
+    formData.append("hm", payload.hm); // ✅ WAJIB ADA: Kirim HM ke Server
     formData.append("line", payload.line);
     formData.append("device", payload.device);
 
@@ -1322,128 +1437,87 @@ async function submitFinalData() {
       location.reload();
     } else {
       // ❌ GAGAL DARI SERVER (Data Ditolak)
-      // Jangan simpan offline! Tampilkan error saja.
       alert("❌ Gagal Menyimpan: " + (resData.message || "Unknown Error"));
       btn.disabled = false;
       btn.innerHTML = "SIMPAN DATA";
     }
 
   } catch (err) {
-    // ⚠️ GAGAL KONEKSI (Network Error / Fetch Failed)
-    // Baru simpan ke offline queue di sini
-    console.warn("Gagal koneksi, alihkan ke offline:", err);
+    // ⚠️ GAGAL KONEKSI (Network Error) -> Alihkan ke Offline
+    console.warn("Gagal Terkoneksi, coba alihkan ke mode offline:", err);
     saveOffline();
   }
 }
-
-  // 🔥 5. FUNGSI SINKRONISASI DATA (Upload Otomatis)
 // ==========================================
 // 🔄 FUNGSI SINKRONISASI (DATA LITER + LAPORAN PENOLAKAN)
 // ==========================================
-  async function uploadPendingData() {
-    // 1. Ambil Antrean Data SUKSES (Refuel Liter)
-    let refuelQueue = JSON.parse(localStorage.getItem('pendingRefuels') || '[]');
+
+async function uploadPendingData() {
+    if (isSyncing) return; // Jika sedang proses, jangan jalankan lagi
     
-    // 2. Ambil Antrean Data GAGAL/DITOLAK (Laporan WA) - 🔥 BAGIAN BARU
+    let refuelQueue = JSON.parse(localStorage.getItem('pendingRefuels') || '[]');
     let rejectQueue = JSON.parse(localStorage.getItem('pendingRejections') || '[]');
 
-    // Jika kedua antrean kosong, tidak perlu kerja
     if (refuelQueue.length === 0 && rejectQueue.length === 0) return;
 
-    // 3. Update Banner Biru (Info Upload)
+    isSyncing = true; // Kunci aktif
+    
+    // 💡 RAHASIANYA: Langsung kosongkan localStorage agar tidak dibaca ulang oleh Heartbeat Sync berikutnya
+    localStorage.setItem('pendingRefuels', '[]');
+    localStorage.setItem('pendingRejections', '[]');
+
     const banner = document.getElementById('offlineBanner');
     banner.classList.add('show');
-    // Tampilkan detail jumlah data yang mau dikirim
-    banner.textContent = `🔄 Sinkronisasi: ${refuelQueue.length} Refuel + ${rejectQueue.length} Laporan...`;
-    banner.style.backgroundColor = "#DBEAFE"; // Biru Muda
-    banner.style.color = "#1E40AF";           // Biru Tua
+    banner.textContent = `🔄 Mengirim ${refuelQueue.length + rejectQueue.length} data tertunda...`;
 
-    // ==========================================
-    // PROSES 1: KIRIM DATA REFUEL (Input Liter)
-    // ==========================================
-    let failedRefuels = []; // Wadah sisa jika gagal lagi
+    let failedRefuels = [];
+    let failedRejections = [];
 
+    // Proses Refuel
     for (const item of refuelQueue) {
         try {
             const formData = new FormData();
             formData.append("action", "submitRefuel");
             formData.append("unitId", item.unitId);
             formData.append("liter", item.liter);
+            formData.append("hm", item.hm);
             formData.append("line", item.line);
-            formData.append("device", "Mobile (Synced)"); 
-            
-            // Opsional: Jika ingin mengirim jam asli scan (bukan jam sync)
-            if(item.timestamp) {
-                 formData.append("originalTime", item.timestamp);
-            }
+            formData.append("device", "Mobile (Synced)");
+            if(item.timestamp) formData.append("originalTime", item.timestamp);
 
             await fetch(apiUrl, { method: "POST", body: formData });
-            console.log(`✅ Refuel Synced: ${item.unitId}`);
-            
         } catch (err) {
-            console.error(`❌ Gagal sync refuel ${item.unitId}:`, err);
-            failedRefuels.push(item); // Masukkan kembali ke antrean
+            failedRefuels.push(item); // Jika gagal, tampung untuk dikembalikan
         }
     }
-    // Simpan sisa refuel yang gagal ke memori HP
-    localStorage.setItem('pendingRefuels', JSON.stringify(failedRefuels));
 
-
-    // ==========================================
-    // PROSES 2: KIRIM LAPORAN PENOLAKAN (WA) 🔥
-    // ==========================================
-    let failedRejections = []; // Wadah sisa laporan gagal
-
+    // Proses Penolakan (WA)
     for (const item of rejectQueue) {
         try {
             const formData = new FormData();
-            // Perhatikan actionnya beda: "reportOfflineRejection"
-            formData.append("action", "reportOfflineRejection"); 
+            formData.append("action", "reportOfflineRejection");
             formData.append("unitId", item.unitId);
             formData.append("line", item.line);
-            formData.append("timestamp", item.timestamp); // Wajib kirim jam kejadian asli!
-
+            formData.append("timestamp", item.timestamp);
             await fetch(apiUrl, { method: "POST", body: formData });
-            console.log(`✅ Laporan Penolakan Synced: ${item.unitId}`);
-
         } catch (err) {
-            console.error(`❌ Gagal sync laporan ${item.unitId}:`, err);
-            failedRejections.push(item); // Masukkan kembali ke antrean
+            failedRejections.push(item);
         }
     }
-    // Simpan sisa laporan yang gagal ke memori HP
-    localStorage.setItem('pendingRejections', JSON.stringify(failedRejections));
 
-
-    // ==========================================
-    // FINAL: CEK HASIL & UPDATE BANNER
-    // ==========================================
-    const totalSisa = failedRefuels.length + failedRejections.length;
-
-    if (totalSisa === 0) {
-        // SUKSES SEMUA
-        banner.textContent = "✅ Semua data & laporan offline terkirim!";
-        banner.style.backgroundColor = "#D1FAE5"; // Hijau Muda
-        banner.style.color = "#065F46";           // Hijau Tua
-        
-        // Hilangkan banner setelah 3 detik
-        setTimeout(() => {
-            banner.classList.remove('show');
-            // Reset tampilan ke default offline
-            banner.textContent = "📡 Mode Offline - Data disimpan lokal";
-            banner.style.backgroundColor = "#FEF3C7"; 
-            banner.style.color = "#92400E";
-        }, 3000);
-
-    } else {
-        // MASIH ADA SISA
-        banner.textContent = `⚠️ Sisa ${totalSisa} data belum terkirim. Coba cari sinyal kuat.`;
-        banner.style.backgroundColor = "#FEE2E2"; // Merah Muda
-        banner.style.color = "#991B1B";
+    // Kembalikan data yang gagal ke localStorage
+    if (failedRefuels.length > 0) {
+        let current = JSON.parse(localStorage.getItem('pendingRefuels') || '[]');
+        localStorage.setItem('pendingRefuels', JSON.stringify([...current, ...failedRefuels]));
     }
+    if (failedRejections.length > 0) {
+        let current = JSON.parse(localStorage.getItem('pendingRejections') || '[]');
+        localStorage.setItem('pendingRejections', JSON.stringify([...current, ...failedRejections]));
+    }
+
+    isSyncing = false; // Buka kunci
+    banner.classList.remove('show');
 }
-
-
 // ==========================================
 // 🧠 FITUR OFFLINE: CEK INTERVAL 8 JAM (LOCAL MEMORY)
 // ==========================================
@@ -1500,6 +1574,13 @@ function saveLocalHistory(unitId) {
     console.log(`📝 Laporan penolakan disimpan lokal untuk: ${unitId}`);
   }
 
+  // 🔄 HEARTBEAT SYNC: Cek data tertunda setiap 15 detik secara otomatis
+  setInterval(() => {
+  if (navigator.onLine) {
+    console.log("🔍 Memeriksa antrean data offline...");
+    uploadPendingData();
+    }
+    }, 15000); // 15000 ms = 15 detik  
 </script>
 
 <!-- 🔧 SERVICE WORKER REGISTRATION -->
