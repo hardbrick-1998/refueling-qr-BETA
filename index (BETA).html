@@ -659,7 +659,7 @@ const CREDS = {
 };
 
 // ✅ UPDATED URL - Apps Script V20.0
-const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbyvob2M0iDEFY8YimQdq547-4K-8X3KNWGhI9uyudXMkK8nbPq499a8ph0oNYdk11NW1Q/exec";
+const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbyUMfjSu4SBzg1u8nX0WVRMDTGaQ8YglL9KlcgnZrEgX1ON73R7gZSkUqZCnoz2PSZOMw/exec";
 
 let user = null, line = null, qr = null, scanning = false, lastCode = null;
 let cameraFacing = "environment";
@@ -905,7 +905,13 @@ function toggleCamera() {
 function toHourMinute(minutes) {
   const jam = Math.floor(minutes / 60);
   const menit = Math.round(minutes % 60);
-  return `${jam}j ${menit}m`;
+  
+  // Logika supaya bahasanya enak didengar
+  if (jam > 0) {
+    return `${jam} Jam ${menit} Menit`; // Dibaca lengkap
+  } else {
+    return `${menit} Menit`;
+  }
 }
 
 function extractUnitNumber(qrText) {
@@ -916,26 +922,23 @@ function extractUnitNumber(qrText) {
 
 // ✅ SIMPLIFIED: Parse DD/MM/YYYY HH:MM:SS format dari backend
 function parseTimestampSimple(timestampStr) {
-  if (!timestampStr) return "";
-  
-  console.log(`[V12.4] Raw timestamp: ${timestampStr}`);
+  if (!timestampStr) return "Barusan";
   
   try {
-    // Format: "04/12/2025 17:03:32"
-    const match = timestampStr.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2}):\d{2}/);
-    if (match) {
-      const jam = parseInt(match[4]);
-      const menit = parseInt(match[5]);
-      const result = jam.toString().padStart(2, '0') + ":" + menit.toString().padStart(2, '0');
-      console.log(`✅ Parsed time: ${result}`);
-      return result;
-    }
+    // Biarkan Javascript memproses format ISO dari Google secara otomatis
+    const date = new Date(timestampStr);
     
-    console.warn(`⚠️ Could not parse timestamp: ${timestampStr}`);
-    return "";
+    // Pastikan valid
+    if (isNaN(date.getTime())) return "-"; 
+    
+    // Ambil Jam dan Menit (Format 24 Jam)
+    const jam = date.getHours().toString().padStart(2, '0');
+    const menit = date.getMinutes().toString().padStart(2, '0');
+    
+    return `${jam}:${menit}`; // Contoh Output: "14:30"
   } catch (err) {
-    console.error(`❌ parseTimestampSimple error: ${err.message}`);
-    return "";
+    console.error("Error parsing date:", err);
+    return "-";
   }
 }
 
@@ -1197,33 +1200,36 @@ function processOfflineSuccess(qrText, result) {
     handleScanSuccess(fakeData, qrText, result);
 }
 
+// --- UPDATE FUNGSI HANDLE SUCCESS (FIX RE-SCAN & UI) ---
 function handleScanSuccess(data, decodedText, result) {
   const status = data.refuelingStatus;
   const minutes = data.minutesRemaining;
   const waktuSisaStr = toHourMinute(minutes);
   
- if (status === "ALLOWED") {
-    // 1. Sembunyikan area scanner agar layar tidak penuh
-    document.querySelector('.qr-display-area').style.display = 'none';
+  // 1. 🔥 PENTING: RESET MEMORI SCANNER
+  // Agar bisa scan QR yang sama berkali-kali tanpa macet
+  lastCode = null; 
+
+  if (status === "ALLOWED") {
+    // --- SKENARIO 1: BOLEH ISI ---
     
-    // 2. Munculkan area input quantity liter
+    // Sembunyikan Scanner & Tampilkan Form
+    document.querySelector('.qr-display-area').style.display = 'none';
     document.getElementById('quantityArea').style.display = 'block';
     
-    // 3. Tampilkan identitas unit yang sedang diproses
+    // Isi Data Unit
     document.getElementById('targetUnitID').textContent = data.unitId;
     document.getElementById('targetUnitSpec').textContent = data.unitName;
     
-    // 4. Simpan Unit ID ke kantong (Variabel Global) untuk dikirim nanti
+    // Simpan ke Global
     currentUnitId = data.unitId; 
     
-    // 5. Matikan kamera (Penting!)
+    // Matikan Kamera & Feedback
     stopScan(); 
-    
-    // 6. Feedback suara dan beep
     playBeep("success");
-    speak(`Unit ${data.unitId} diizinkan. Silahkan lengkapi data pengisian.`, "success");
+    speak(`Unit ${data.unitId} diizinkan. Silakan lengkapi data.`, "success");
     
-    // 7. Otomatis arahkan kursor ke kotak liter agar keyboard HP muncul
+    // Fokus ke Input
     setTimeout(() => { 
       const inputLiter = document.getElementById('literInput');
       inputLiter.focus();
@@ -1231,34 +1237,87 @@ function handleScanSuccess(data, decodedText, result) {
     }, 500);
 
   } else if (status === "DISALLOWED") {
-     // ... (Sisanya ke bawah tetap pakai kodingan lama kamu) {
-    //baris baru : untuk konversi barcode kedalam text
+    // --- SKENARIO 2: DITOLAK (REVISI DISINI) ---
+    
+    // 1. 🔥 Matikan Kamera & Reset Status
+    stopScan();
+    scanning = false; // Wajib di-set False agar tombol Play bisa dipencet lagi!
+    
+    // 2. Olah Data Waktu
     let fullUnitNumber = extractUnitNumber(decodedText);
     let jamRefuel = "";
-    
-    // ✅ FIXED: Parse timestamp dari backend
     if (data.allowedTimestampStr) {
-      console.log(`🔍 Backend send: ${data.allowedTimestampStr}`);
-      jamRefuel = parseTimestampSimple(data.allowedTimestampStr);
-      console.log(`✅ Frontend parse result: ${jamRefuel}`);
+       jamRefuel = parseTimestampSimple(data.allowedTimestampStr);
     }
-    
     const allowedLine = data.lineName || line;
+
+    // 3. Tampilan Error Cyberpunk (Merah Neon)
     result.className = "status-disallowed";
     result.innerHTML = `
-      <span class="result-status">
-        <span class="result-status-icon">🚫</span>
-        <span class="result-unit">${fullUnitNumber} - Pengisian terakhir pukul ${jamRefuel} di line ${allowedLine}</span>
-        <span class="result-remain">Sisa ${waktuSisaStr} lagi</span>
-      </span>
+      <div class="result-status" style="animation: pulse-glow 1s infinite alternate;">
+        <span class="result-status-icon" style="font-size: 40px;">⛔</span>
+        <span class="result-unit" style="font-size: 24px; color: var(--neon-red); font-family: 'Orbitron';">${fullUnitNumber}</span>
+        
+        <div style="margin: 10px 0; border-top: 1px dashed var(--neon-red); width: 100%; opacity: 0.5;"></div>
+        
+        <div style="text-align: left; width: 100%; font-size: 14px; padding: 0 10px;">
+           📅 Terakhir: <b style="color: #fff;">${jamRefuel}</b><br>
+           📍 Lokasi: <b style="color: #fff;">${allowedLine}</b><br>
+           ⏳ Tunggu: <b style="color: #ffcc00; font-size: 16px;">${waktuSisaStr}</b> lagi
+        </div>
+        
+        <button onclick="startScan()" style="
+            margin-top: 15px;
+            background: rgba(220, 38, 38, 0.2);
+            border: 1px solid var(--neon-red);
+            color: var(--neon-red);
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            font-family: 'Orbitron';
+            text-transform: uppercase;
+        ">SCAN UNIT LAIN 🔄</button>
+      </div>
     `;
     
+    // 4. Suara Error (REVISI DETAIL)
     const unitInti = extractUnitNumber(decodedText);
-    speak(`Mohon maaf unit ${unitInti} sudah melakukan pengisian pukul ${jamRefuel} di line ${allowedLine}`, "error");
+    
+    // Menyusun kalimat lengkap
+    // Contoh: "Pengisian ditolak. Unit DT020 sudah mengisi pada pukul 14:30, di Bays 1. Silahkan menunggu 4 jam 20 menit lagi."
+    const pesanSuara = `Pengisian ditolak. Unit ${unitInti} sudah mengisi pada pukul ${jamRefuel}, di LINE ${allowedLine}. Silahkan menunggu ${waktuSisaStr} lagi.`;
+    
+    speak(pesanSuara, "error");
+    playBeep("error");
+
   } else if (status === "INVALID_QR") {
+    // --- SKENARIO 3: QR TIDAK TERDAFTAR ---
+    
+    stopScan();
+    scanning = false; // Reset Status
+    
     result.className = "status-invalid";
-    result.innerHTML = `<span class="result-status"><span class="result-status-icon">❌</span> Unit tidak terdaftar</span>`;
+    result.innerHTML = `
+        <span class="result-status">
+            <span class="result-status-icon" style="font-size: 30px;">❌</span> 
+            <span style="color: var(--neon-red); font-weight: bold;">UNIT TIDAK TERDAFTAR</span>
+            <div style="font-size: 12px; margin-top:5px; color:#fff;">Hubungi Admin Logistik</div>
+            
+            <button onclick="startScan()" style="
+                margin-top: 10px; 
+                padding: 8px 15px; 
+                border-radius: 8px; 
+                border: 1px solid #fff; 
+                background: rgba(255,255,255,0.1); 
+                color: #fff;
+                cursor: pointer;
+            ">SCAN ULANG</button>
+        </span>
+    `;
     speak("Unit tidak terdaftar di sistem", "error");
+    playBeep("error");
   }
 }
 
