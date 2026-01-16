@@ -234,32 +234,76 @@
       text-transform: uppercase; letter-spacing: 2px;
     }
 
+    /* --- WRAPPER KAMERA (FRAME) --- */
     .qr-reader-wrapper {
       position: relative;
       border: 3px solid var(--border-color);
       border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
+      overflow: hidden; 
+      box-shadow: 0 0 25px rgba(0, 243, 255, 0.15);
+      background: #000; 
+      /* Memastikan wrapper punya tinggi saat loading */
+      min-height: 250px; 
     }
 
-    /* GARIS LASER SCANNER */
+    /* --- GARIS LASER MERAH (PERBAIKAN VISIBILITY) --- */
     .qr-reader-wrapper::after {
-      content: ''; position: absolute; width: 100%; height: 4px;
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0; 
+      width: 100%; 
+      height: 4px; /* Laser lebih tebal sedikit */
+      
+      /* Warna Merah Solid + Glow (Biar pasti kelihatan) */
       background: var(--neon-red);
-      box-shadow: 0 0 20px var(--neon-red);
-      animation: scanline 2.5s infinite linear;
-      z-index: 10;
+      box-shadow: 0 0 20px var(--neon-red), 0 0 40px var(--neon-red);
+      
+      /* Animasi Turun Naik */
+      animation: scanline 2s infinite linear;
+      
+      /* KUNCI PERBAIKAN: Z-Index Tinggi & Pointer Events */
+      z-index: 999; 
       pointer-events: none;
+    }
+
+    /* Video dari library kadang menutupi, kita paksa di bawah */
+    #qr-reader video {
+        object-fit: cover;
+        z-index: 1;
     }
 
     #qr-reader { border: none; background: #000; }
 
     .camera-toggle-btn {
-      background: rgba(0,0,0,0.8);
-      border: 2px solid #fff;
-      color: #fff;
-      width: 50px; height: 50px; /* Tombol kamera lebih besar */
-      font-size: 24px;
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      
+      width: 50px; height: 50px; /* Ukuran Bola */
+      border-radius: 50%; /* Membuat jadi Bulat Sempurna */
+      
+      background: rgba(0, 0, 0, 0.6); /* Transparan Gelap */
+      border: 2px solid var(--border-color); /* Garis Neon Biru */
+      color: var(--neon-blue);
+      
+      display: flex; justify-content: center; align-items: center;
+      font-size: 24px; /* Ukuran Ikon Kamera */
+      cursor: pointer;
+      z-index: 20; /* Agar di atas video kamera */
+      
+      backdrop-filter: blur(5px);
+      box-shadow: 0 0 15px rgba(0,0,0,0.5);
+      transition: all 0.4s ease;
+    }
+
+    /* Efek saat Hover (Disentuh) */
+    .camera-toggle-btn:hover {
+      background: var(--neon-blue);
+      color: #000;
+      border-color: #fff;
+      box-shadow: 0 0 25px var(--neon-blue);
+      transform: rotate(180deg) scale(1.1); /* Animasi Putar & Membesar */
     }
 
     /* --- HASIL SCAN --- */
@@ -289,8 +333,21 @@
       text-shadow: 0 0 10px var(--neon-red);
     }
 
+    /* --- POSISI TOMBOL (DI TENGAH) --- */
+    .action-btns {
+      display: flex;
+      gap: 25px; /* Jarak antar tombol Play & Stop */
+      justify-content: center; /* <--- INI KUNCI BIAR DI TENGAH */
+      align-items: center;
+      margin-top: 20px;
+    }
+
     .action-btns button {
-        width: 65px; height: 65px; font-size: 28px; border-radius: 16px; /* Tombol play/stop besar */
+      width: 70px; height: 70px; /* Ukuran tombol mantap */
+      font-size: 30px; 
+      border-radius: 50%; /* Dibuat Bulat biar lebih modern */
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Efek membal saat ditekan */
     }
 
     /* --- INPUT QUANTITY AREA --- */
@@ -391,15 +448,34 @@
     }
 
     /* --- TOMBOL START/STOP --- */
+    /* --- TOMBOL PLAY (SEGITIGA HIJAU) --- */
     #startBtn {
-      background: rgba(0, 243, 255, 0.1) !important;
-      border: 2px solid var(--neon-blue) !important;
-      color: var(--neon-blue) !important;
+      background: rgba(10, 255, 104, 0.15) !important; /* Hijau Transparan */
+      border: 3px solid var(--neon-green) !important;   /* Garis Hijau */
+      color: var(--neon-green) !important;              /* Ikon Segitiga Hijau */
+      box-shadow: 0 0 20px rgba(10, 255, 104, 0.2);     /* Cahaya Hijau Halus */
     }
+
+    #startBtn:hover {
+      background: var(--neon-green) !important;         /* Hijau Penuh saat disentuh */
+      color: #000 !important;                           /* Ikon jadi hitam */
+      box-shadow: 0 0 40px var(--neon-green);           /* Cahaya makin terang */
+      transform: scale(1.15);                           /* Membesar sedikit */
+    }
+
+    /* --- TOMBOL STOP (KOTAK MERAH) - Biar seimbang --- */
     #stopBtn {
-      background: rgba(255, 0, 85, 0.1) !important;
-      border: 2px solid var(--neon-red) !important;
+      background: rgba(255, 0, 85, 0.15) !important;
+      border: 3px solid var(--neon-red) !important;
       color: var(--neon-red) !important;
+      box-shadow: 0 0 20px rgba(255, 0, 85, 0.2);
+    }
+
+    #stopBtn:hover {
+      background: var(--neon-red) !important;
+      color: #000 !important;
+      box-shadow: 0 0 40px var(--neon-red);
+      transform: scale(1.15);
     }
 
     /* --- BANNER OFFLINE (FIXED VERSION) --- */
@@ -478,7 +554,7 @@
           <label>🔑 Password</label>
           <input type="password" id="pwd" placeholder="Masukkan password" required>
         </div>
-        <button type="submit" class="login-btn" id="loginBtn">Get Started</button>
+        <button type="submit" class="login-btn" id="loginBtn">LOGIN</button>
       </form>
       <div class="login-footer">Design by FOG HAULING MACO</div>
     </div>
@@ -719,13 +795,13 @@ function handleLogin(e) {
     setTimeout(() => {
       transitionToScanner();
       loginBtn.disabled = false;
-      loginBtn.textContent = "Get Started";
+      loginBtn.textContent = "LOGIN";
     }, 500);
   }).catch(() => {
     err.textContent = "❌ Gagal load database dari server";
     err.style.display = "block";
     loginBtn.disabled = false;
-    loginBtn.textContent = "Get Started";
+    loginBtn.textContent = "LOGIN";
   });
 }
 
@@ -799,18 +875,30 @@ function showScanner() {
   }, 100);
 }
 
+// --- FUNGSI TUKAR KAMERA (ANTI MACET) ---
 function toggleCamera() {
   if (!scanning) {
-    alert("Mulai scanning terlebih dahulu!");
+    alert("Kamera belum menyala! Tekan tombol Play (Segitiga Hijau) dulu.");
     return;
   }
   
-  if(qr && scanning) {
+  if(qr) {
+    // Stop dulu kamera lama
     qr.stop().then(() => {
       qr.clear();
+      scanning = false; // Reset status sebentar
+      
+      // Tukar Mode Kamera
       cameraFacing = cameraFacing === "environment" ? "user" : "environment";
+      
+      // Nyalakan lagi
       startScan();
-    }).catch(() => {});
+      
+    }).catch((err) => {
+      console.error("Gagal stop kamera:", err);
+      scanning = false; // Paksa reset jika error
+      alert("Gagal menukar kamera. Silakan tekan Play lagi.");
+    });
   }
 }
 
@@ -944,17 +1032,42 @@ function showLargeToast(title, message, duration = 4000) {
   }, duration);
 }
 
+// --- FUNGSI START SCAN (ANTI MACET) ---
 function startScan() {
-  if(scanning) return;
+  if(scanning) return; // Cegah klik ganda
+
   try {
+    // Reset Tampilan
     document.getElementById("result").innerHTML = '<span class="result-status"><span class="result-status-icon">🔄</span> Membuka kamera...</span>';
+    
+    // Inisialisasi Scanner
     qr = new Html5Qrcode("qr-reader");
-    qr.start({ facingMode: cameraFacing }, { fps: 10, qrbox: 250 }, onScan, () => {});
+    
+    // KUNCI TOMBOL (Scanning aktif)
+    scanning = true; 
+
+    qr.start(
+      { facingMode: cameraFacing }, 
+      { fps: 10, qrbox: 250 }, 
+      onScan, 
+      (errorMessage) => {
+        // Error saat scanning berjalan (abaikan saja agar tidak spam)
+      }
+    ).catch((err) => {
+      // ⚠️ JIKA KAMERA GAGAL DIBUKA (Misal: Izin ditolak)
+      console.error(err);
+      document.getElementById("result").innerHTML = `<span class="result-status"><span class="result-status-icon">❌</span> Kamera Error: ${err}</span>`;
+      
+      // BUKA KUNCI AGAR BISA KLIK PLAY LAGI
+      scanning = false; 
+    });
+
     document.getElementById("result").innerHTML = '<span class="result-status"><span class="result-status-icon">📷</span> Arahkan ke QR...</span>';
-    scanning = true;
-    lastCode = null;
+    
   } catch(e) {
+    // Error tak terduga
     document.getElementById("result").innerHTML = `<span class="result-status"><span class="result-status-icon">❌</span> ${e.message}</span>`;
+    scanning = false; // Buka kunci
   }
 }
 
