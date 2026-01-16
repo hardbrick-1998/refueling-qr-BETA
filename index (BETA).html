@@ -14,12 +14,43 @@
   <meta name="apple-mobile-web-app-title" content="QR Scan">
 
   <script src="https://unpkg.com/html5-qrcode@latest"></script>
+  
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+
+   <style>
+    /* --- PALET WARNA CYBERPUNK --- */
+    :root {
+      --neon-blue: #00f3ff;
+      --neon-green: #0aff68;
+      --neon-red: #ff0055;
+      --dark-bg: #050b14;
+      --glass-bg: rgba(12, 24, 40, 0.92); /* Lebih gelap dikit biar teks jelas */
+      --border-color: rgba(0, 243, 255, 0.5);
+      --text-main: #e0f2fe;
+    }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Inter', sans-serif; }
+    
+    body { 
+      font-family: 'Rajdhani', sans-serif; 
+      background-color: var(--dark-bg);
+      background-image: linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.9)), url('PITSTOP-39.png');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      color: var(--text-main);
+      overflow-x: hidden;
+      line-height: 1.5; /* Jarak antar baris lebih lega */
+    }
+
+    /* --- ANIMASI --- */
+    @keyframes scanline {
+      0% { top: 0%; opacity: 0; }
+      20% { opacity: 1; }
+      100% { top: 100%; opacity: 0; }
+    }
     
     @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
     @keyframes slideUpFadeIn {
@@ -29,493 +60,396 @@
     
     .fade-out { animation: fadeOut 0.5s ease-in-out forwards; }
     .slide-up-fade-in { animation: slideUpFadeIn 0.5s ease-out forwards; }
-    
+
+    /* --- LOGIN PAGE --- */
     #loginPage {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      /* --- BACKGROUND BARU --- */
-      background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('PITSTOP-39.png');
-      background-size: cover;
-      background-position: center;
-      background-attachment: fixed;
-      /* ----------------------- */
-      padding: 20px;
-      opacity: 1;
-      transition: opacity 0.5s ease-in-out;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; padding: 20px;
     }
     
-    .login-container { width: 100%; max-width: 420px; }
+    .login-container { width: 100%; max-width: 480px; } /* Diperlebar sedikit */
+
     .login-box {
-      background: white;
-      border-radius: 28px;
-      padding: 50px 35px 40px;
-      box-shadow: 0 12px 50px rgba(0,0,0,0.08);
+      background: var(--glass-bg);
+      border: 2px solid var(--border-color); /* Border lebih tebal */
+      border-radius: 20px;
+      padding: 50px 30px;
+      box-shadow: 0 0 40px rgba(0, 243, 255, 0.15);
       text-align: center;
+      position: relative;
+      backdrop-filter: blur(15px);
     }
-    
-    .logo-header {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      margin-bottom: 20px;
+
+    /* Garis Hiasan Atas */
+    .login-box::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+      background: linear-gradient(90deg, transparent, var(--neon-blue), transparent);
+      box-shadow: 0 0 15px var(--neon-blue);
     }
-    
+
+    .main-site-title {
+      font-family: 'Orbitron', sans-serif;
+      color: var(--neon-blue);
+      text-align: center;
+      font-size: 32px; /* DIPERBESAR */
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      margin-bottom: 30px;
+      text-shadow: 0 0 20px var(--neon-blue);
+      line-height: 1.2;
+    }
+
     .logo-header img {
-      width: 50px;
-      height: 50px;
-      object-fit: contain;
-      filter: drop-shadow(0 2px 8px rgba(0,0,0,0.1));
+      width: 70px; height: 70px; /* Logo lebih besar */
+      filter: drop-shadow(0 0 10px rgba(255,255,255,0.6));
+      margin-bottom: 10px;
     }
-    
+
     .login-box h1 {
-      font-size: 28px;
-      color: #1F2937;
-      font-weight: 700;
-      margin-bottom: 12px;
-      letter-spacing: -0.5px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 24px;
+      color: #fff;
+      margin-bottom: 10px;
+      letter-spacing: 2px;
     }
+
+    .login-box p { color: #94a3b8; font-size: 15px; margin-bottom: 30px; font-weight: 500; }
+
+    /* --- INPUT FIELDS (LOGIN) --- */
+    .form-group { margin-bottom: 25px; text-align: left; }
     
-    .login-box p {
-      color: #6B7280;
-      font-size: 14px;
-      margin-bottom: 32px;
-      line-height: 1.6;
-      font-weight: 400;
-    }
-    
-    .form-group {
-      margin-bottom: 18px;
-      text-align: left;
-    }
-    
-    .form-group label {
-      display: block;
-      font-size: 13px;
-      color: #374151;
-      font-weight: 600;
+    .form-group label { 
+      color: var(--neon-blue); 
+      font-weight: 700; 
+      letter-spacing: 1px; 
+      font-size: 16px; /* Label lebih besar */
       margin-bottom: 8px;
-      letter-spacing: 0.3px;
+      display: block;
+      text-transform: uppercase;
     }
-    
-    .form-group select,
-    .form-group input {
+
+    .form-group select, .form-group input {
       width: 100%;
-      padding: 12px 14px;
-      border: 1.5px solid #E5E7EB;
-      border-radius: 16px;
-      font-size: 14px;
-      font-family: 'Inter', sans-serif;
-      transition: all 0.3s ease;
-      background: #F9FAFB;
-      color: #1F2937;
+      background: rgba(0, 0, 0, 0.6) !important;
+      border: 2px solid rgba(255, 255, 255, 0.2) !important;
+      color: #fff !important;
+      font-family: 'Orbitron', sans-serif;
+      padding: 16px; /* Padding lebih lega */
+      font-size: 18px !important; /* Teks input besar */
+      border-radius: 12px !important;
+      transition: 0.3s;
     }
-    
-    .form-group select {
-      background: #F9FAFB url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%231F2937' d='M1 1l5 5 5-5'/%3E%3C/svg%3E") no-repeat right 14px center;
-      padding-right: 40px;
-      appearance: none;
-      cursor: pointer;
-    }
-    
-    .form-group select:hover,
-    .form-group input:hover {
-      border-color: #D1D5DB;
-      background-color: #FAFBFC;
-    }
-    
-    .form-group select:focus,
-    .form-group input:focus {
+
+    .form-group select:focus, .form-group input:focus {
+      border-color: var(--neon-blue) !important;
+      box-shadow: 0 0 20px rgba(0, 243, 255, 0.4);
       outline: none;
-      border-color: #3B82F6;
-      background-color: white;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      background: rgba(0, 0, 0, 0.8) !important;
     }
-    
-    .form-group select:focus {
-      background-color: white;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%233B82F6' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
-      background-position: right 14px center;
-      background-repeat: no-repeat;
-    }
-    
-    .form-group input::placeholder { color: #9CA3AF; }
-    .form-group select option { background: white; color: #1F2937; padding: 10px; }
-    
-    .error-box {
-      display: none;
-      background: #FEE2E2;
-      color: #991B1B;
-      padding: 12px 14px;
-      border-radius: 10px;
-      margin-bottom: 20px;
-      font-size: 13px;
-      border-left: 4px solid #DC2626;
-      font-weight: 500;
-    }
-    
+
+    /* --- TOMBOL UTAMA --- */
     .login-btn {
       width: 100%;
-      padding: 12px;
-      background: linear-gradient(135deg, #1F2937 0%, #111827 100%);
-      color: white;
-      border: none;
-      border-radius: 12px;
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-      margin-top: 8px;
-      transition: all 0.3s ease;
+      background: linear-gradient(180deg, rgba(0,243,255,0.15), rgba(0,243,255,0.05)) !important;
+      border: 2px solid var(--neon-blue) !important;
+      color: var(--neon-blue) !important;
+      font-family: 'Orbitron', sans-serif;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
-    
-    .login-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(0,0,0,0.2);
-    }
-    
-    .login-btn:active { transform: translateY(0); }
-    .login-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-    
-    .login-footer {
-      text-align: center;
-      margin-top: 20px;
-      font-size: 12px;
-      color: #9CA3AF;
-      font-weight: 500;
-    }
-    
-    #scannerPage {
-      display: none;
-      min-height: 100vh;
-      /* --- BACKGROUND BARU UNTUK SCANNER --- */
-      background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('PITSTOP-39.png');
-      background-size: cover;
-      background-position: center;
-      background-attachment: fixed;
-      /* ------------------------------------ */
-  
-      color: #1F2937;
-      flex-direction: column;
-      opacity: 0;
-      transition: opacity 0.5s ease-out;
-    }
-    
-    #scannerPage.active { opacity: 1; }
-    
-    .scanner-header {
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(12px);
-      padding: 18px 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    }
-    
-    .scanner-header h1 {
+      letter-spacing: 3px;
+      font-weight: 800;
+      padding: 18px; /* Tombol tebal */
       font-size: 18px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      color: #1F2937;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0,243,255,0.2);
+      transition: all 0.3s;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    .login-btn:hover {
+      background: var(--neon-blue) !important;
+      color: #000 !important;
+      box-shadow: 0 0 35px var(--neon-blue);
+      transform: translateY(-2px);
     }
     
-    .header-info {
-      display: flex;
-      gap: 12px;
-      align-items: center;
+    .login-footer { color: #64748b; margin-top: 30px; font-size: 12px; letter-spacing: 1px; }
+
+    /* --- SCANNER PAGE --- */
+    #scannerPage {
+      display: none; min-height: 100vh;
+      background: transparent;
+      flex-direction: column;
+      opacity: 0; transition: opacity 0.5s ease-out;
     }
-    
+    #scannerPage.active { opacity: 1; }
+
+    .scanner-header {
+      background: rgba(5, 11, 20, 0.95);
+      border-bottom: 2px solid var(--border-color);
+      padding: 20px 25px;
+      display: flex; justify-content: space-between; align-items: center;
+      backdrop-filter: blur(10px);
+    }
+
+    .scanner-header h1 { color: #fff; font-family: 'Orbitron'; font-size: 22px; font-weight: 800; }
+
     .user-badge {
-      background: rgba(59, 130, 246, 0.15);
-      color: #1e40af;
-      padding: 8px 14px;
-      border-radius: 10px;
-      font-size: 12px;
+      background: rgba(0, 243, 255, 0.1);
+      border: 1px solid var(--neon-blue);
+      color: var(--neon-blue);
+      font-family: 'Orbitron';
+      letter-spacing: 1px;
+      padding: 8px 15px;
       font-weight: 700;
-      border: 1px solid rgba(59, 130, 246, 0.3);
-      letter-spacing: 0.3px;
+      border-radius: 8px;
     }
-    
+
     .logout-btn {
-      background: linear-gradient(135deg, #DC2626, #B91C1C);
-      color: white;
-      border: none;
-      padding: 8px 14px;
-      border-radius: 10px;
-      font-size: 12px;
+      background: rgba(255, 0, 85, 0.2);
+      border: 1px solid var(--neon-red);
+      color: var(--neon-red);
+      font-family: 'Orbitron';
+      padding: 8px 15px;
+      border-radius: 8px;
       font-weight: 700;
       cursor: pointer;
-      transition: all 0.3s ease;
-      letter-spacing: 0.3px;
     }
-    
-    .logout-btn:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
-    }
-    
-    .scanner-content {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 40px 20px;
-    }
-    
-    .scanner-main { width: 100%; max-width: 460px; }
-    
+
+    .scanner-content { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .scanner-main { width: 100%; max-width: 500px; } /* Lebar area scan ditambah */
+
+    /* --- KOTAK QR CODE --- */
     .qr-display-area {
-      background: white;
-      border-radius: 20px;
-      padding: 28px;
-      text-align: center;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.08);
-      border: 1px solid rgba(0,0,0,0.05);
+      background: var(--glass-bg);
+      border: 2px solid var(--border-color);
+      border-radius: 24px;
+      padding: 30px;
+      box-shadow: 0 0 50px rgba(0,0,0,0.6);
     }
-    
-    .qr-display-area h2 {
-      font-size: 18px;
-      font-weight: 700;
-      margin-bottom: 22px;
-      color: #1F2937;
-      letter-spacing: 0.3px;
+
+    .qr-display-area h2 { 
+      color: #fff; font-family: 'Orbitron'; margin-bottom: 20px; font-size: 20px; 
+      text-transform: uppercase; letter-spacing: 2px;
     }
-    
+
     .qr-reader-wrapper {
       position: relative;
-      margin-bottom: 18px;
-    }
-    
-    #qr-reader {
-      width: 100%;
-      aspect-ratio: 1;
+      border: 3px solid var(--border-color);
       border-radius: 16px;
-      border: 2px solid #E5E7EB;
-      background: linear-gradient(135deg, #F3F4F6, #F9FAFB);
       overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: border-color 0.3s ease;
+      box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
     }
-    
-    #qr-reader:hover { border-color: #D1D5DB; }
-    
-    .camera-toggle-btn {
-      position: absolute;
-      bottom: 10px;
-      right: 10px;
-      background: white;
-      border: 1.5px solid #E5E7EB;
-      color: #1F2937;
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      font-size: 18px;
-      transition: all 0.3s ease;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+
+    /* GARIS LASER SCANNER */
+    .qr-reader-wrapper::after {
+      content: ''; position: absolute; width: 100%; height: 4px;
+      background: var(--neon-red);
+      box-shadow: 0 0 20px var(--neon-red);
+      animation: scanline 2.5s infinite linear;
       z-index: 10;
+      pointer-events: none;
     }
-    
-    .camera-toggle-btn:hover {
-      background: #F3F4F6;
-      border-color: #3B82F6;
-      color: #3B82F6;
-      transform: scale(1.08);
+
+    #qr-reader { border: none; background: #000; }
+
+    .camera-toggle-btn {
+      background: rgba(0,0,0,0.8);
+      border: 2px solid #fff;
+      color: #fff;
+      width: 50px; height: 50px; /* Tombol kamera lebih besar */
+      font-size: 24px;
     }
-    
-    .camera-toggle-btn:active { transform: scale(0.95); }
-    
+
+    /* --- HASIL SCAN --- */
     #result {
-      background: white;
-      color: #1F2937;
-      padding: 14px 16px;
+      background: rgba(0,0,0,0.6);
+      border: 1px solid #555;
+      color: #fff;
+      font-family: 'Rajdhani';
+      font-size: 18px; /* Teks hasil lebih besar */
+      margin-top: 20px;
+      padding: 15px;
       border-radius: 12px;
-      font-size: 13px;
-      line-height: 1.5;
-      min-height: 45px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 18px;
       font-weight: 600;
-      text-align: center;
-      border: 1.5px solid #E5E7EB;
     }
-    
-    #result.status-disallowed {
-      background: #FEF2F2;
-      border-color: #FECACA;
-      color: #991B1B;
-    }
-    
+
     #result.status-allowed {
-      background: #F0FDF4;
-      border-color: #BBFBBB;
-      color: #166534;
+      background: rgba(10, 255, 104, 0.2);
+      border: 2px solid var(--neon-green);
+      color: var(--neon-green);
+      text-shadow: 0 0 10px var(--neon-green);
     }
-    
-    #result.status-error {
-      background: #FEF3C7;
-      border-color: #FDE68A;
-      color: #92400E;
+
+    #result.status-disallowed {
+      background: rgba(255, 0, 85, 0.2);
+      border: 2px solid var(--neon-red);
+      color: var(--neon-red);
+      text-shadow: 0 0 10px var(--neon-red);
     }
-    
-    #result.status-invalid {
-      background: #FEE2E2;
-      border-color: #FECACA;
-      color: #991B1B;
-    }
-    
-    .result-status {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-      justify-content: center;
-    }
-    
-    .result-status-icon { font-size: 20px; }
-    .result-unit { font-size: 12px; font-weight: 700; letter-spacing: 0.3px; }
-    .result-time { font-size: 11px; font-weight: 500; opacity: 0.8; }
-    .result-remain { font-size: 11px; font-weight: 500; opacity: 0.8; margin-top: 3px; }
-    
-    .action-btns {
-      display: flex;
-      gap: 14px;
-      justify-content: center;
-    }
-    
+
     .action-btns button {
-      width: 54px;
-      height: 54px;
-      border-radius: 14px;
-      border: none;
+        width: 65px; height: 65px; font-size: 28px; border-radius: 16px; /* Tombol play/stop besar */
+    }
+
+    /* --- INPUT QUANTITY AREA --- */
+    #quantityArea {
+      background: var(--glass-bg) !important;
+      border: 2px solid var(--border-color);
+      border-radius: 24px !important;
+      color: #fff;
+      padding: 40px 25px !important;
+    }
+
+    #quantityArea h2 { 
+      color: var(--neon-blue) !important; 
+      font-family: 'Orbitron'; 
+      font-size: 24px !important;
+      text-shadow: 0 0 15px var(--neon-blue);
+      margin-bottom: 15px !important;
+    }
+    
+    #quantityArea p { color: #cbd5e1 !important; font-size: 16px !important; margin-bottom: 30px !important; }
+
+    #targetUnitDisplay {
+      background: rgba(0, 243, 255, 0.05) !important;
+      border: 2px dashed var(--neon-blue) !important;
+      border-radius: 16px !important;
+      padding: 20px !important;
+      margin-bottom: 30px !important;
+    }
+
+    #targetUnitID { 
+      color: var(--neon-blue) !important; 
+      font-family: 'Orbitron'; 
+      font-size: 42px !important; /* UNIT ID RAKSASA */
+      font-weight: 900 !important;
+      text-shadow: 0 0 20px var(--neon-blue);
+    }
+    
+    #targetUnitSpec { color: #fff !important; opacity: 0.9; font-size: 14px !important; letter-spacing: 1px; }
+
+    /* --- INPUT LITER & HM BESAR (SUPER JELAS) --- */
+    #literInput, #hmInput {
+      background: #000 !important;
+      border: 3px solid var(--border-color) !important;
+      color: var(--neon-blue) !important;
+      font-family: 'Orbitron';
+      font-size: 50px !important; /* INPUT RAKSASA */
+      height: 90px !important;
+      text-shadow: 0 0 10px var(--neon-blue);
+      border-radius: 16px !important;
+      margin-top: 5px;
+    }
+    
+    #literInput:focus, #hmInput:focus {
+      border-color: var(--neon-blue) !important;
+      box-shadow: 0 0 30px rgba(0, 243, 255, 0.5) !important;
+    }
+    
+    /* Label Input Khusus */
+    #quantityArea label {
+        font-size: 16px !important;
+        letter-spacing: 1px;
+        color: #fff !important;
+        margin-bottom: 10px !important;
+    }
+
+    /* --- TOMBOL SIMPAN --- */
+    .btn-save-liter {
+      background: linear-gradient(135deg, var(--neon-green), #059669) !important;
+      color: #000 !important;
+      font-family: 'Orbitron';
+      font-size: 22px !important; /* Teks tombol simpan besar */
+      font-weight: 800 !important;
+      letter-spacing: 2px;
+      box-shadow: 0 0 20px var(--neon-green);
+      border: none !important;
+      padding: 20px !important;
+      border-radius: 16px !important;
+      margin-top: 20px;
       cursor: pointer;
-      font-size: 22px;
-      transition: all 0.3s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .btn-save-liter:hover {
+      box-shadow: 0 0 40px var(--neon-green);
+      transform: scale(1.02);
     }
     
+    /* Tombol Batal */
+    button[onclick="location.reload()"] {
+        background: rgba(220, 38, 38, 0.2) !important;
+        border: 2px solid var(--neon-red) !important;
+        color: var(--neon-red) !important;
+        font-size: 16px !important;
+        padding: 15px !important;
+        border-radius: 12px !important;
+        text-transform: uppercase;
+        font-family: 'Orbitron';
+        letter-spacing: 1px;
+    }
+
+    /* --- TOMBOL START/STOP --- */
     #startBtn {
-      background: linear-gradient(135deg, #3B82F6, #2563EB);
-      color: white;
+      background: rgba(0, 243, 255, 0.1) !important;
+      border: 2px solid var(--neon-blue) !important;
+      color: var(--neon-blue) !important;
     }
-    
-    #startBtn:hover {
-      transform: scale(1.1);
-      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
-    }
-    
-    #startBtn:active { transform: scale(0.95); }
-    
     #stopBtn {
-      background: white;
-      color: #DC2626;
-      border: 2px solid #DC2626;
+      background: rgba(255, 0, 85, 0.1) !important;
+      border: 2px solid var(--neon-red) !important;
+      color: var(--neon-red) !important;
     }
-    
-    #stopBtn:hover {
-      background: rgba(220, 38, 38, 0.1);
-      transform: scale(1.08);
-    }
-    
-    .scanner-footer {
-      background: rgba(255, 255, 255, 0.5);
-      padding: 16px;
-      text-align: center;
-      font-size: 12px;
-      color: #6B7280;
-      border-top: 1px solid rgba(0, 0, 0, 0.05);
-      font-weight: 500;
-      letter-spacing: 0.2px;
-    }
-    
+
+    /* --- BANNER OFFLINE (FIXED VERSION) --- */
     .offline-banner {
-      display: none;
-      background: #FEF3C7;
-      color: #92400E;
-      padding: 12px;
+      display: none; 
+      background: #000;
+      color: var(--neon-red);
+      border-bottom: 3px solid var(--neon-red);
+      font-family: 'Orbitron', sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      padding: 15px;
       text-align: center;
-      font-size: 12px;
-      font-weight: 600;
-      border-bottom: 2px solid #FDE68A;
+      font-size: 14px;
+      font-weight: 900;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 5px 20px rgba(255, 0, 85, 0.4);
     }
     
     .offline-banner.show { display: block; }
     
-    /* Paste di baris kosong sebelum @media */
-    .main-site-title {
-    font-family: 'Poppins', sans-serif;
-    color: #FFFFFF;
-    text-align: center;
-    font-size: 36px; /* Ukuran besar untuk PC */
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 3px;
-    margin-bottom: 100px;
-    text-shadow: 2px 4px 12px rgba(0, 0, 0, 0.9); /* Bayangan agar teks tajam */
-    animation: slideUpFadeIn 0.8s ease-out forwards;
-}
+    .scanner-footer {
+      background: rgba(0,0,0,0.9);
+      color: #666;
+      border-top: 1px solid #333;
+      padding: 20px;
+      font-size: 13px;
+    }
 
+    /* --- RESPONSIVE MOBILE (AGAR TIDAK PECAH DI HP) --- */
     @media (max-width: 480px) {
-      .main-site-title {
-      font-size: 20px; /* Ukuran lebih kecil khusus HP */
-      letter-spacing: 1px;
-      margin-bottom: 15px;}
-      .login-box { padding: 35px 20px 30px; border-radius: 24px; }
-      .logo-header img { width: 45px; height: 45px; }
-      .login-box h1 { font-size: 24px; }
-      .scanner-header { flex-wrap: wrap; gap: 10px; }
-      .scanner-main { max-width: 100%; }
-      .scanner-content { padding: 20px 15px; }
-      .qr-display-area { padding: 18px; }
-      .action-btns button { width: 50px; height: 50px; font-size: 20px; }
+      .main-site-title { font-size: 22px; margin-bottom: 25px; }
+      .login-box { padding: 40px 20px; }
+      .form-group input, .form-group select { font-size: 16px !important; padding: 14px; }
+      
+      #literInput, #hmInput { 
+          font-size: 40px !important; /* Tetap besar tapi pas di HP */
+          height: 80px !important; 
+          width: 100% !important;
+      }
+      
+      .scanner-header h1 { display: none; } /* Sembunyikan judul di header HP biar lega */
+      .scanner-header { justify-content: center; padding: 15px; }
+      .qr-display-area { padding: 20px; }
+      #targetUnitID { font-size: 32px !important; }
     }
-    
-    /* Style untuk Input Quantity Liter */
-    #literInput {
-      width: 100%;
-      max-width: 300px; /* Membatasi lebar agar tetap proporsional */
-      height: 80px;
-      font-size: 40px;
-      font-weight: 800;
-      text-align: center;
-      border: 3px solid #1F2937; /* Disesuaikan agar lebih kontras */
-      border-radius: 20px;
-      margin: 15px auto; /* Membuatnya otomatis ke tengah */
-      display: block; /* Penting agar margin auto berfungsi */
-      color: #1F2937;
-      background-color: #F9FAFB;
-    }
-
-    .btn-save-liter {
-      background: linear-gradient(135deg, #10B981 0%, #059669 100%) !important;
-      font-size: 18px !important;
-      height: 55px;
-      width: 100%;
-      border-radius: 12px;
-      color: white;
-      border: none;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
   </style>
+
 </head>
 <body>
 
@@ -640,6 +574,7 @@
 
 let isSyncing = false; // Kunci untuk mencegah duplikasi pengiriman antreans
 let currentUnitId = null; // <--- TEMPELKAN DI SINI (Variabel Global)
+let isProcessing = false; // Kunci agar tidak terjadi pengiriman ganda
 
 const CREDS = {
   "bays 1": { pwd: "qwerty", line: "A" },
@@ -1304,150 +1239,82 @@ function checkLiterLimit(input) {
 }
 
 // 🔥 UPDATE FUNGSI SUBMIT (LOGIKA FIX & BERSIH)
+
 async function submitFinalData() {
-  const literInput = document.getElementById('literInput');
-  const hmInput = document.getElementById('hmInput'); // Ambil elemen HM
-  const literValue = literInput.value;
-  const hmValue = hmInput.value; // Ambil nilai HM
-  const btn = document.getElementById('saveLiterBtn');
-  
-  // 1. VALIDASI WAJIB : INPUT LITER
-  if (!literValue || literValue <= 0) {
-    alert("⚠️ ERROR: Jumlah LITER wajib diisi!");
-    literInput.focus();
-    return;
-  }
+    if (isProcessing) return; // Jika sedang proses, abaikan klik berikutnya
 
-  // 2. VALIDASI TIDAK BOLEH LEBIH DARI 333 LITER
-  if (literValue > 333) {
-    alert("⛔ DITOLAK: Maksimal pengisian adalah 333 Liter!");
-    literInput.style.borderColor = "red";
-    literInput.focus();
-    return; // Berhenti di sini, data tidak terkirim
-  }
+    const btn = document.getElementById('saveLiterBtn');
+    const literVal = document.getElementById('literInput').value;
+    const hmVal = document.getElementById('hmInput').value;
 
-  // 3. VALIDASI WAJIB: HM (Hour Meter)
-  if (!hmValue || hmValue <= 0) {
-    alert("⚠️ ERROR: HOUR METER (HM) wajib diisi!");
-    hmInput.focus(); // Arahkan kursor ke kotak HM
-    return;
-  }
-
-  // 4. Validasi Unit ID (Penting jika halaman habis direfresh)
-  if (!currentUnitId) {
-    alert("⚠️ Data unit hilang. Mohon scan ulang!");
-    location.reload();
-    return;
-  }
-
-  // 🔥 CATAT JAM PENGISIAN DI MEMORI HP SEKARANG JUGA 🔥
-  saveLocalHistory(currentUnitId); 
-  
-  btn.disabled = true;
-  btn.innerHTML = "⏳ MENYIMPAN...";
-
-  // 4. Siapkan Data Paket (HANYA SEKALI DEKLARASI)
-  const payload = {
-    unitId: currentUnitId,
-    liter: literValue,
-    hm: hmValue, // ✅ HM Masuk ke Paket
-    line: user, 
-    device: "Mobile Trial",
-    timestamp: new Date().getTime()
-  };
-
-  // --- FUNGSI SIMPAN OFFLINE (HELPER) ---
-  // 4. LOGIKA PENGIRIMAN CERDAS
-  const saveOffline = () => {
-      let queue = JSON.parse(localStorage.getItem('pendingRefuels') || '[]');
-      queue.push(payload);
-      localStorage.setItem('pendingRefuels', JSON.stringify(queue));
-      
-      // Ganti alert menjadi toast agar tidak menghentikan alur kerja
-      showLargeToast("📡 MODE OFFLINE", "Sinyal lemah, data disimpan di HP. Akan otomatis terkirim saat sinyal kembali.");
-      location.reload();
-  };
-
-  // Langsung coba proses online (Tanpa cek navigator.onLine di awal)
-  
-  // --- MULAI DARI SINI ---
-  try {
-    const formData = new FormData();
-    formData.append("action", "submitRefuel");
-    formData.append("unitId", payload.unitId);
-    formData.append("liter", payload.liter);
-    formData.append("hm", payload.hm);
-    formData.append("line", payload.line);
-    formData.append("device", payload.device);
-
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000); 
-
-    const response = await fetch(apiUrl, { method: "POST", body: formData, signal: controller.signal });
-    clearTimeout(timeout);
-    
-    const resData = await response.json();
-
-    if (resData.status === "success") {
-      // ✅ JIKA SUKSES: Baru catat history 8 jam di HP agar tidak bisa scan lagi
-      saveLocalHistory(currentUnitId); 
-      
-      alert("✅ DATA BERHASIL TERKIRIM!");
-      location.reload(); // Segarkan halaman untuk membersihkan memori
-    } else {
-      alert("❌ Ditolak Server: " + (resData.message || "Error"));
-      btn.disabled = false;
-      btn.innerHTML = "SIMPAN DATA";
+    // Validasi dasar
+    if (!literVal || !hmVal) {
+        alert("Mohon isi Jumlah Solar dan HM!");
+        return;
     }
 
-  } catch (err) {
-    // ⚠️ JIKA GAGAL (OFFLINE / TIMEOUT):
-    console.warn("Koneksi gagal, beralih ke mode offline:", err);
-    
-    // 1. Catat history 8 jam di HP agar unit tidak scan dobel saat offline
-    saveLocalHistory(currentUnitId); 
-    
-    // 2. Masukkan ke antrean offline (Pending Refuels)
-    saveOffline(); 
-  }
-  // --- SAMPAI DI SINI ---
+    // KUNCI PROSES
+    isProcessing = true;
+    btn.disabled = true;
+    btn.innerHTML = "⏳ MENGIRIM...";
 
-  // 5. CEK KONEKSI
-  if (!navigator.onLine) {
-    saveOffline();
-    return;
-  }
+    const payload = {
+        unitId: currentUnitId,
+        liter: literVal,
+        hm: hmVal,
+        line: user,
+        device: "Mobile Trial"
+    };
 
-  // 6. PROSES ONLINE
-  try {
-    const formData = new FormData();
-    formData.append("action", "submitRefuel");
-    formData.append("unitId", payload.unitId);
-    formData.append("liter", payload.liter);
-    formData.append("hm", payload.hm); // ✅ WAJIB ADA: Kirim HM ke Server
-    formData.append("line", payload.line);
-    formData.append("device", payload.device);
+    try {
+        const formData = new FormData();
+        formData.append("action", "submitRefuel");
+        formData.append("unitId", payload.unitId);
+        formData.append("liter", payload.liter);
+        formData.append("hm", payload.hm);
+        formData.append("line", payload.line);
+        formData.append("device", payload.device);
 
-    const response = await fetch(apiUrl, { method: "POST", body: formData });
-    const resData = await response.json();
+        // Timeout 10 detik agar tidak menunggu selamanya
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 10000);
 
-    if (resData.status === "success") {
-      // ✅ SUKSES
-      alert("✅ BERHASIL TERKIRIM!");
-      location.reload();
-    } else {
-      // ❌ GAGAL DARI SERVER (Data Ditolak)
-      alert("❌ Gagal Menyimpan: " + (resData.message || "Unknown Error"));
-      btn.disabled = false;
-      btn.innerHTML = "SIMPAN DATA";
+        const response = await fetch(apiUrl, { 
+            method: "POST", 
+            body: formData, 
+            signal: controller.signal 
+        });
+        
+        clearTimeout(timeout);
+        const resData = await response.json();
+
+        if (resData.status === "success") {
+            // ✅ JIKA SUKSES ONLINE: Langsung catat history 8 jam lokal dan SELESAI
+            saveLocalHistory(currentUnitId);
+            alert("✅ DATA BERHASIL TERKIRIM!");
+            location.reload(); 
+        } else {
+            throw new Error(resData.message || "Ditolak Server");
+        }
+
+    } catch (err) {
+        console.warn("⚠️ Gagal Online, Beralih ke Offline:", err);
+        
+        // ⚠️ HANYA MASUK KE OFFLINE JIKA INTERNET BENAR-BENAR MATI/TIMEOUT
+        saveLocalHistory(currentUnitId);
+        
+        // Simpan ke antrean offline
+        let queue = JSON.parse(localStorage.getItem('pendingRefuels') || '[]');
+        queue.push(payload);
+        localStorage.setItem('pendingRefuels', JSON.stringify(queue));
+        
+        alert("📡 MODE OFFLINE: Data disimpan di HP (Akan terkirim otomatis saat sinyal bagus)");
+        location.reload();
+    } finally {
+        isProcessing = false;
     }
-
-  } catch (err) {
-    // ⚠️ GAGAL KONEKSI (Network Error) -> Alihkan ke Offline
-    console.warn("Gagal Terkoneksi, coba alihkan ke mode offline:", err);
-    saveOffline();
-  }
 }
+
 // ==========================================
 // 🔄 FUNGSI SINKRONISASI (DATA LITER + LAPORAN PENOLAKAN)
 // ==========================================
@@ -1580,7 +1447,60 @@ function saveLocalHistory(unitId) {
     console.log("🔍 Memeriksa antrean data offline...");
     uploadPendingData();
     }
-    }, 15000); // 15000 ms = 15 detik  
+    }, 30000); // 15000 ms = 15 detik  
+
+    // ==========================================
+// 🚀 FUNGSI KIRIM REJECT LANGSUNG (REAL-TIME)
+// ==========================================
+async function reportRejectionDirectly(unitId, reason) {
+    // Cek koneksi dulu, kalau offline langsung lempar ke antrean
+    if (!navigator.onLine) {
+        queueOfflineRejection(unitId, reason);
+        return;
+    }
+
+    try {
+        const formData = new FormData();
+        formData.append("action", "reportOfflineRejection");
+        formData.append("unitId", unitId);
+        formData.append("line", user);
+        formData.append("timestamp", new Date().getTime());
+        formData.append("reason", reason); // Kirim alasan penolakan
+
+        // Timeout 15 detik saja, jangan lama-lama
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 15000);
+
+        await fetch(apiUrl, { method: "POST", body: formData, signal: controller.signal });
+        clearTimeout(timeout);
+        
+        console.log("✅ Rejection terkirim ke WA secara Direct");
+    } catch (err) {
+        console.warn("Gagal kirim reject langsung, menyimpan ke antrean...", err);
+        // Jika gagal kirim langsung, baru masukkan ke antrean offline
+        queueOfflineRejection(unitId, reason);
+    }
+}
+
+// ==========================================
+// 💓 HEARTBEAT SYNC: JANTUNG OTOMATIS
+// ==========================================
+// Kode ini akan "berdenyut" setiap 5 detik untuk mengecek apakah ada sinyal & data tertunda
+setInterval(() => {
+    // 1. Cek apakah ada Sinyal Internet?
+    if (navigator.onLine) {
+        
+        // 2. Cek apakah ada antrean data di memori HP?
+        let pendingRefuel = JSON.parse(localStorage.getItem('pendingRefuels') || '[]');
+        let pendingReject = JSON.parse(localStorage.getItem('pendingRejections') || '[]');
+
+        // 3. Jika ada data DAN sedang tidak sibuk kirim, maka KIRIM SEKARANG!
+        if ((pendingRefuel.length > 0 || pendingReject.length > 0) && !isSyncing) {
+            console.log("⚡ Sinyal terdeteksi! Mengirim data tertunda...");
+            uploadPendingData();
+        }
+    }
+}, 5000); // 5000ms = Cek setiap 5 Detik (Sangat Responsif)
 </script>
 
 <!-- 🔧 SERVICE WORKER REGISTRATION -->
