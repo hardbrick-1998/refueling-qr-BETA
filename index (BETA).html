@@ -1089,13 +1089,22 @@ function startScan() {
   }
 }
 
-function stopScan() {
+// Update stopScan agar punya fitur "Silent"
+function stopScan(silent = false) {
   if(!qr || !scanning) return;
+  
   qr.stop().then(() => {
     qr.clear();
     scanning = false;
-    document.getElementById("result").innerHTML = '<span class="result-status"><span class="result-status-icon">🔴</span> Dihentikan</span>';
-  }).catch(() => {});
+    
+    // HANYA ubah tulisan jadi "Dihentikan" jika mode silent MATI
+    // Kalau silent = true, layar tidak akan diganggu (tetap menampilkan pesan error detail)
+    if (!silent) {
+        document.getElementById("result").innerHTML = '<span class="result-status"><span class="result-status-icon">🔴</span> Dihentikan</span>';
+    }
+  }).catch((err) => {
+    console.log("Stop failed: ", err);
+  });
 }
 
 async function onScan(decodedText) {
@@ -1140,36 +1149,37 @@ async function onScan(decodedText) {
 
 // --- LOGIC PENANGANAN SAAT OFFLINE (SATPAM LOKAL) ---
 function handleOfflineLogic(unitId, originalText, result) {
-    // 1. Cek History Lokal
     const localCheck = checkLocalHistoryAllowed(unitId);
 
     if (!localCheck.allowed) {
-        // --- DITOLAK SECARA LOKAL ---
+        // ... (Kode kalkulasi jam biarkan sama) ...
         const sisaWaktu = toHourMinute(localCheck.minutesRemaining);
         const jamTerakhir = localCheck.lastTime.getHours().toString().padStart(2, '0') + ":" + localCheck.lastTime.getMinutes().toString().padStart(2, '0');
         
-        // Simpan Laporan Penolakan ke Antrean Upload
         reportRejectionDirectly(unitId, "INTERVAL BELUM TERCAPAI (OFFLINE)");
 
         result.className = "status-disallowed";
         result.innerHTML = `
-        <span class="result-status">
-          <span class="result-status-icon">⛔</span>
-          <span class="result-unit">${unitId} (OFFLINE GUARD)</span>
-          <span class="result-remain">Baru isi jam ${jamTerakhir}. Tunggu ${sisaWaktu} lagi.</span>
-        </span>
+        <div class="result-status" style="animation: pulse-glow 1s infinite alternate;">
+          <span class="result-status-icon" style="font-size: 40px;">⛔</span>
+          <span class="result-unit">${unitId} (OFFLINE)</span>
+          <div style="margin: 10px 0; border-top: 1px dashed var(--neon-red); width: 100%; opacity: 0.5;"></div>
+          <div style="text-align: left; width: 100%; font-size: 14px; padding: 0 10px;">
+             📅 Terakhir: <b style="color: #fff;">${jamTerakhir}</b><br>
+             ⏳ Tunggu: <b style="color: #ffcc00; font-size: 16px;">${sisaWaktu}</b> lagi
+          </div>
+          <button onclick="startScan()" style="margin-top: 15px; background: rgba(220, 38, 38, 0.2); border: 1px solid var(--neon-red); color: var(--neon-red); padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; font-family: 'Orbitron'; text-transform: uppercase;">SCAN UNIT LAIN 🔄</button>
+        </div>
         `;
         speak(`Ditolak offline. Unit baru saja mengisi.`, "error");
         playBeep("error");
-        stopScan(); 
+        
+        stopScan(true); // <--- REVISI: PAKAI TRUE (SILENT)
 
     } else {
-        // --- DITERIMA SECARA LOKAL ---
-        // Unit belum pernah isi (di HP ini) atau sudah > 8 jam
         processOfflineSuccess(originalText, result);
     }
 }
-
 
 async function processQRCode(decodedText, device, result, retryCount = 0) {
   // 1. CEK KONEKSI BROWSER (Layer Pertama)
@@ -1257,32 +1267,23 @@ function handleScanSuccess(data, decodedText, result) {
   const minutes = data.minutesRemaining;
   const waktuSisaStr = toHourMinute(minutes);
   
-  // 1. 🔥 PENTING: RESET MEMORI SCANNER
-  // Agar bisa scan QR yang sama berkali-kali tanpa macet
   lastCode = null; 
 
   if (status === "ALLOWED") {
-    // --- SKENARIO 1: BOLEH ISI ---
-    
-    // Sembunyikan Scanner & Tampilkan Form
+    // KASUS DITERIMA: Tetap pakai stopScan() biasa karena layar akan diganti form input
     document.querySelector('.qr-display-area').style.display = 'none';
     document.getElementById('quantityArea').style.display = 'block';
     
-    // Isi Data Unit
     document.getElementById('targetUnitID').textContent = data.unitId;
     document.getElementById('targetUnitSpec').textContent = data.unitName;
     
-    // Simpan ke Global
     currentUnitId = data.unitId; 
     currentLastHM = parseFloat(data.lastHM) || 0; 
-    console.log("History HM ditemukan:", currentLastHM);
-
-    // Matikan Kamera & Feedback
-    stopScan(); 
-    playBeep("success");
-    speak(`Unit ${data.unitId} diizinkan. Silakan lengkapi data.`, "success");
     
-    // Fokus ke Input
+    stopScan(true); // Silent, karena layar scanner disembunyikan
+    playBeep("success");
+    speak(`Unit ${data.unitId} diizinkan.`, "success");
+    
     setTimeout(() => { 
       const inputLiter = document.getElementById('literInput');
       inputLiter.focus();
@@ -1290,61 +1291,37 @@ function handleScanSuccess(data, decodedText, result) {
     }, 500);
 
   } else if (status === "DISALLOWED") {
-    // --- SKENARIO 2: DITOLAK (TAMPILAN KOTAK MERAH FULL) ---
+    // --- REVISI DISINI: PAKAI stopScan(true) ---
+    stopScan(true); // <--- MATIKAN KAMERA TANPA MENGHAPUS PESAN ERROR
+    scanning = false; 
     
-    // 1. 🔥 Matikan Kamera & Reset Status
-    stopScan();
-    scanning = false; // Wajib False agar tombol Play/Reset bisa dipencet!
-    
-    // 2. Olah Data Waktu (Safety Check)
     let fullUnitNumber = extractUnitNumber(decodedText);
-    
-    // Perbaikan: Jika data timestamp ada, parse. Jika tidak, kasih strip "-"
     let jamRefuel = data.allowedTimestampStr ? parseTimestampSimple(data.allowedTimestampStr) : "-";
-    
     const allowedLine = data.lineName || line;
 
-    // 3. Tampilan Error Cyberpunk (Merah Neon) - SAMA PERSIS DENGAN OFFLINE
     result.className = "status-disallowed";
     result.innerHTML = `
       <div class="result-status" style="animation: pulse-glow 1s infinite alternate;">
         <span class="result-status-icon" style="font-size: 40px;">⛔</span>
         <span class="result-unit" style="font-size: 24px; color: var(--neon-red); font-family: 'Orbitron';">${fullUnitNumber}</span>
-        
         <div style="margin: 10px 0; border-top: 1px dashed var(--neon-red); width: 100%; opacity: 0.5;"></div>
-        
         <div style="text-align: left; width: 100%; font-size: 14px; padding: 0 10px;">
            📅 Terakhir: <b style="color: #fff;">${jamRefuel}</b><br>
-           📍 Lokasi: <b style="color: #fff;">${allowedLine}</b><br>
+           📍 Lokasi: <b style="color: #fff;"> LINE ${allowedLine}</b><br>
            ⏳ Tunggu: <b style="color: #ffcc00; font-size: 16px;">${waktuSisaStr}</b> lagi
         </div>
-        
-        <button onclick="startScan()" style="
-            margin-top: 15px;
-            background: rgba(220, 38, 38, 0.2);
-            border: 1px solid var(--neon-red);
-            color: var(--neon-red);
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            width: 100%;
-            font-family: 'Orbitron';
-            text-transform: uppercase;
-        ">SCAN UNIT LAIN 🔄</button>
+        <button onclick="startScan()" style="margin-top: 15px; background: rgba(220, 38, 38, 0.2); border: 1px solid var(--neon-red); color: var(--neon-red); padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; font-family: 'Orbitron'; text-transform: uppercase;">SCAN UNIT LAIN 🔄</button>
       </div>
     `;
     
-    // 4. Suara Error
-    const pesanSuara = `Pengisian ditolak. Unit ${fullUnitNumber} sudah mengisi pada pukul ${jamRefuel}, di ${allowedLine}. Silahkan menunggu ${waktuSisaStr} lagi.`;
+    const pesanSuara = `Pengisian ditolak. Unit ${fullUnitNumber} sudah mengisi pada pukul ${jamRefuel}, di LINE ${allowedLine}. Tunggu ${waktuSisaStr} lagi.`;
     speak(pesanSuara, "error");
     playBeep("error");
 
   } else if (status === "INVALID_QR") {
-    // --- SKENARIO 3: QR TIDAK TERDAFTAR ---
-    
-    stopScan();
-    scanning = false; // Reset Status
+    // --- REVISI DISINI JUGA ---
+    stopScan(true); // <--- Silent Mode
+    scanning = false;
     
     result.className = "status-invalid";
     result.innerHTML = `
@@ -1352,19 +1329,10 @@ function handleScanSuccess(data, decodedText, result) {
             <span class="result-status-icon" style="font-size: 30px;">❌</span> 
             <span style="color: var(--neon-red); font-weight: bold;">UNIT TIDAK TERDAFTAR</span>
             <div style="font-size: 12px; margin-top:5px; color:#fff;">Hubungi Admin Logistik</div>
-            
-            <button onclick="startScan()" style="
-                margin-top: 10px; 
-                padding: 8px 15px; 
-                border-radius: 8px; 
-                border: 1px solid #fff; 
-                background: rgba(255,255,255,0.1); 
-                color: #fff;
-                cursor: pointer;
-            ">SCAN ULANG</button>
+            <button onclick="startScan()" style="margin-top: 10px; padding: 8px 15px; border-radius: 8px; border: 1px solid #fff; background: rgba(255,255,255,0.1); color: #fff; cursor: pointer;">SCAN ULANG</button>
         </span>
     `;
-    speak("Unit tidak terdaftar di sistem", "error");
+    speak("Unit tidak terdaftar", "error");
     playBeep("error");
   }
 }
