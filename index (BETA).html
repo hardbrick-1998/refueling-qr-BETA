@@ -674,7 +674,7 @@ const CREDS = {
 };
 
 // ✅ UPDATED URL - Apps Script V20.0
-const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbxujaKJrFAxkAeWHiOM15O4mTvSK_IX7pv96otSI2LzhEEY36YwHEqn9eNYoWG9TCPkcg/exec";
+const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbzPXTW7nfQHf93uwR2vH39IyN-3qxjjbDRoSI1rDaR6srH0lciYUxA7iTgO_whBLJdTPg/exec";
 
 let user = null, line = null, qr = null, scanning = false, lastCode = null;
 let cameraFacing = "environment";
@@ -1545,7 +1545,8 @@ async function submitFinalData() {
         const response = await fetch(apiUrl, { 
             method: "POST", 
             body: formData, 
-            signal: controller.signal 
+            signal: controller.signal,
+            redirect: "follow" 
         });
         
         clearTimeout(timeout);
@@ -1633,7 +1634,7 @@ async function uploadPendingData() {
             formData.append("device", "Mobile (Synced)");
             if(item.timestamp) formData.append("originalTime", item.timestamp);
 
-            const response = await fetch(apiUrl, { method: "POST", body: formData });
+            const response = await fetch(apiUrl, { method: "POST", body: formData, redirect: "follow" });
             // Cek apakah server merespon success
             const resData = await response.json();
             if(resData.status !== "success") throw new Error("Server Error");
@@ -1736,21 +1737,16 @@ function saveLocalHistory(unitId) {
   // 📝 FUNGSI CATAT PENOLAKAN KE MEMORI HP
   // ==========================================
   function queueOfflineRejection(unitId, reason) {
-    // 1. Ambil daftar laporan yang sudah ada (kalau ada)
     let rejections = JSON.parse(localStorage.getItem('pendingRejections') || '[]');
-    
-    // 2. Tambahkan laporan baru ke tumpukan
     rejections.push({
         unitId: unitId,
-        line: user, // Mengambil variabel global 'user' (Bays 1/2/3)
-        timestamp: new Date().getTime(), // Catat jam kejadian (bukan jam kirim)
+        line: user, 
+        timestamp: new Date().getTime(),
         reason: reason
     });
-    
-    // 3. Simpan kembali ke memori HP
     localStorage.setItem('pendingRejections', JSON.stringify(rejections));
     console.log(`📝 Laporan penolakan disimpan lokal untuk: ${unitId}`);
-  }
+  } 
 
   // 🔄 HEARTBEAT SYNC: Cek data tertunda setiap 15 detik secara otomatis
   setInterval(() => {
@@ -1763,32 +1759,30 @@ function saveLocalHistory(unitId) {
     // ==========================================
 // 🚀 FUNGSI KIRIM REJECT LANGSUNG (REAL-TIME)
 // ==========================================
+// ==========================================
+// 🚀 FUNGSI KIRIM REJECT LANGSUNG (REAL-TIME)
+// ==========================================
 async function reportRejectionDirectly(unitId, reason) {
-    // Cek koneksi dulu, kalau offline langsung lempar ke antrean
     if (!navigator.onLine) {
         queueOfflineRejection(unitId, reason);
         return;
     }
-
     try {
         const formData = new FormData();
         formData.append("action", "reportOfflineRejection");
         formData.append("unitId", unitId);
         formData.append("line", user);
         formData.append("timestamp", new Date().getTime());
-        formData.append("reason", reason); // Kirim alasan penolakan
+        formData.append("reason", reason);
 
-        // Timeout 15 detik saja, jangan lama-lama
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 15000);
 
         await fetch(apiUrl, { method: "POST", body: formData, signal: controller.signal });
         clearTimeout(timeout);
-        
         console.log("✅ Rejection terkirim ke WA secara Direct");
     } catch (err) {
         console.warn("Gagal kirim reject langsung, menyimpan ke antrean...", err);
-        // Jika gagal kirim langsung, baru masukkan ke antrean offline
         queueOfflineRejection(unitId, reason);
     }
 }
@@ -1797,21 +1791,18 @@ async function reportRejectionDirectly(unitId, reason) {
 // 💓 HEARTBEAT SYNC: JANTUNG OTOMATIS
 // ==========================================
 // Kode ini akan "berdenyut" setiap 5 detik untuk mengecek apakah ada sinyal & data tertunda
-setInterval(() => {
-    // 1. Cek apakah ada Sinyal Internet?
+  setInterval(() => {
     if (navigator.onLine) {
-        
-        // 2. Cek apakah ada antrean data di memori HP?
         let pendingRefuel = JSON.parse(localStorage.getItem('pendingRefuels') || '[]');
         let pendingReject = JSON.parse(localStorage.getItem('pendingRejections') || '[]');
 
-        // 3. Jika ada data DAN sedang tidak sibuk kirim, maka KIRIM SEKARANG!
+        // Jika ada data DAN tidak sedang proses kirim
         if ((pendingRefuel.length > 0 || pendingReject.length > 0) && !isSyncing) {
-            console.log("⚡ Sinyal terdeteksi! Mengirim data tertunda...");
+            console.log("⚡ Sinyal Stabil & Ada Data Tertunda -> Eksekusi Upload...");
             uploadPendingData();
         }
     }
-}, 5000); // 5000ms = Cek setiap 5 Detik (Sangat Responsif)
+  }, 5000);
 </script>
 
 <!-- 🔧 SERVICE WORKER REGISTRATION -->
