@@ -524,6 +524,20 @@
       .qr-display-area { padding: 20px; }
       #targetUnitID { font-size: 32px !important; }
     }
+
+    /* --- STATUS SUKSES UPLOAD OFFLINE --- */
+    .offline-banner.success-sync {
+      background: rgba(10, 255, 104, 0.15) !important; /* Latar Hijau Transparan */
+      border-bottom: 3px solid var(--neon-green) !important; /* Garis Bawah Hijau */
+      color: var(--neon-green) !important; /* Teks Hijau */
+      box-shadow: 0 5px 20px rgba(10, 255, 104, 0.3); /* Cahaya Hijau */
+      animation: slideDown 0.5s ease-out;
+    }
+
+    @keyframes slideDown {
+      from { transform: translateY(-100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
   </style>
 
 </head>
@@ -1478,7 +1492,7 @@ async function submitFinalData() {
         // KASUS B: HM Loncat > 20 Jam
         else if (hmVal > (currentLastHM + 20)) {
             isAnomaly = true;
-            warningText = `⚠️ PERINGATAN: LONJAKAN HM!\n\nHM terakhir: ${currentLastHM}\nHM sekarang: ${hmVal}\n\nAda kenaikan drastis lebih dari 20 jam.`;
+            warningText = `⚠️ PERINGATAN: LONJAKAN HM!\n\nHM terakhir: ${currentLastHM}\nHM sekarang: ${hmVal}\n\nAda ANOMALI selisih HM lebih dari 20 HM .`;
         }
 
         // JIKA ADA ANOMALI, TAMPILKAN KONFIRMASI
@@ -1569,27 +1583,35 @@ async function submitFinalData() {
 // 🔄 FUNGSI SINKRONISASI (DATA LITER + LAPORAN PENOLAKAN)
 
 async function uploadPendingData() {
-    if (isSyncing) return; // Jika sedang proses, jangan jalankan lagi
+    // Cek koneksi internet dulu
+    if (!navigator.onLine) return; 
+
+    // Jika sedang proses, jangan jalankan lagi
+    if (isSyncing) return; 
     
     let refuelQueue = JSON.parse(localStorage.getItem('pendingRefuels') || '[]');
     let rejectQueue = JSON.parse(localStorage.getItem('pendingRejections') || '[]');
 
+    // Jika antrean kosong, stop
     if (refuelQueue.length === 0 && rejectQueue.length === 0) return;
 
-    isSyncing = true; // Kunci aktif
+    isSyncing = true; // 🔒 Kunci aktif
     
-    // 💡 RAHASIANYA: Langsung kosongkan localStorage agar tidak dibaca ulang oleh Heartbeat Sync berikutnya
+    // 💡 RAHASIA: Kosongkan localStorage agar tidak dibaca ulang oleh Heartbeat Sync berikutnya
     localStorage.setItem('pendingRefuels', '[]');
     localStorage.setItem('pendingRejections', '[]');
 
     const banner = document.getElementById('offlineBanner');
+    
+    // Tampilkan Status MENGIRIM (Kuning/Loading)
     banner.classList.add('show');
-    banner.textContent = `🔄 Mengirim ${refuelQueue.length + rejectQueue.length} data tertunda...`;
+    banner.classList.remove('success-sync'); // Reset style
+    banner.innerHTML = `🔄 MENGIRIM ${refuelQueue.length + rejectQueue.length} DATA TERTUNDA...`;
 
     let failedRefuels = [];
     let failedRejections = [];
 
-    // Proses Refuel
+    // --- 1. PROSES REFUEL ---
     for (const item of refuelQueue) {
         try {
             const formData = new FormData();
@@ -1601,13 +1623,18 @@ async function uploadPendingData() {
             formData.append("device", "Mobile (Synced)");
             if(item.timestamp) formData.append("originalTime", item.timestamp);
 
-            await fetch(apiUrl, { method: "POST", body: formData });
+            const response = await fetch(apiUrl, { method: "POST", body: formData });
+            // Cek apakah server merespon success
+            const resData = await response.json();
+            if(resData.status !== "success") throw new Error("Server Error");
+
         } catch (err) {
-            failedRefuels.push(item); // Jika gagal, tampung untuk dikembalikan
+            console.warn("Gagal kirim item refuel:", err);
+            failedRefuels.push(item); // Tampung untuk dikembalikan
         }
     }
 
-    // Proses Penolakan (WA)
+    // --- 2. PROSES PENOLAKAN (WA) ---
     for (const item of rejectQueue) {
         try {
             const formData = new FormData();
@@ -1615,13 +1642,17 @@ async function uploadPendingData() {
             formData.append("unitId", item.unitId);
             formData.append("line", item.line);
             formData.append("timestamp", item.timestamp);
+            
             await fetch(apiUrl, { method: "POST", body: formData });
         } catch (err) {
+            console.warn("Gagal kirim item reject:", err);
             failedRejections.push(item);
         }
     }
 
-    // Kembalikan data yang gagal ke localStorage
+    // --- 3. HANDLING GAGAL & SUKSES ---
+
+    // A. Kembalikan data yang gagal ke localStorage (jika ada)
     if (failedRefuels.length > 0) {
         let current = JSON.parse(localStorage.getItem('pendingRefuels') || '[]');
         localStorage.setItem('pendingRefuels', JSON.stringify([...current, ...failedRefuels]));
@@ -1631,10 +1662,31 @@ async function uploadPendingData() {
         localStorage.setItem('pendingRejections', JSON.stringify([...current, ...failedRejections]));
     }
 
-    isSyncing = false; // Buka kunci
-    banner.classList.remove('show');
+    // B. CEK HASIL AKHIR (HIJAU JIKA SUKSES SEMUA)
+    if (failedRefuels.length === 0 && failedRejections.length === 0) {
+        // ✅ SEMUA BERHASIL
+        banner.innerHTML = `✅ DATA TERTUNDA BERHASIL TERKIRIM!`;
+        banner.classList.add('success-sync'); // Ubah jadi Hijau Futuristik
+        
+        // Bunyi notif (jika ada fiturnya)
+        if (typeof playBeep === 'function') playBeep("success");
+
+        // Tahan banner hijau selama 4 detik, lalu sembunyikan
+        setTimeout(() => {
+            banner.classList.remove('show');
+            banner.classList.remove('success-sync'); 
+            isSyncing = false; // 🔓 Buka kunci
+        }, 4000);
+
+    } else {
+        // ❌ ADA YANG GAGAL (Sinyal putus di tengah jalan)
+        // Langsung sembunyikan banner agar nanti dicoba lagi oleh interval berikutnya
+        banner.classList.remove('show');
+        isSyncing = false; // 🔓 Buka kunci
+    }
 }
-// ==========================================
+
+
 // 🧠 FITUR OFFLINE: CEK INTERVAL 8 JAM (LOCAL MEMORY)
 // ==========================================
 const REFUEL_INTERVAL_HOURS = 8; // Atur durasi interval di sini
