@@ -1251,7 +1251,7 @@ function processOfflineSuccess(qrText, result) {
     handleScanSuccess(fakeData, qrText, result);
 }
 
-// --- UPDATE FUNGSI HANDLE SUCCESS (FIX RE-SCAN & UI) ---
+// --- UPDATE FUNGSI HANDLE SUCCESS (TAMPILAN KONSISTEN & FIX TOMBOL) ---
 function handleScanSuccess(data, decodedText, result) {
   const status = data.refuelingStatus;
   const minutes = data.minutesRemaining;
@@ -1274,7 +1274,6 @@ function handleScanSuccess(data, decodedText, result) {
     
     // Simpan ke Global
     currentUnitId = data.unitId; 
-    
     currentLastHM = parseFloat(data.lastHM) || 0; 
     console.log("History HM ditemukan:", currentLastHM);
 
@@ -1291,21 +1290,21 @@ function handleScanSuccess(data, decodedText, result) {
     }, 500);
 
   } else if (status === "DISALLOWED") {
-    // --- SKENARIO 2: DITOLAK (REVISI DISINI) ---
+    // --- SKENARIO 2: DITOLAK (TAMPILAN KOTAK MERAH FULL) ---
     
     // 1. 🔥 Matikan Kamera & Reset Status
     stopScan();
-    scanning = false; // Wajib di-set False agar tombol Play bisa dipencet lagi!
+    scanning = false; // Wajib False agar tombol Play/Reset bisa dipencet!
     
-    // 2. Olah Data Waktu
+    // 2. Olah Data Waktu (Safety Check)
     let fullUnitNumber = extractUnitNumber(decodedText);
-    let jamRefuel = "";
-    if (data.allowedTimestampStr) {
-       jamRefuel = parseTimestampSimple(data.allowedTimestampStr);
-    }
+    
+    // Perbaikan: Jika data timestamp ada, parse. Jika tidak, kasih strip "-"
+    let jamRefuel = data.allowedTimestampStr ? parseTimestampSimple(data.allowedTimestampStr) : "-";
+    
     const allowedLine = data.lineName || line;
 
-    // 3. Tampilan Error Cyberpunk (Merah Neon)
+    // 3. Tampilan Error Cyberpunk (Merah Neon) - SAMA PERSIS DENGAN OFFLINE
     result.className = "status-disallowed";
     result.innerHTML = `
       <div class="result-status" style="animation: pulse-glow 1s infinite alternate;">
@@ -1336,13 +1335,8 @@ function handleScanSuccess(data, decodedText, result) {
       </div>
     `;
     
-    // 4. Suara Error (REVISI DETAIL)
-    const unitInti = extractUnitNumber(decodedText);
-    
-    // Menyusun kalimat lengkap
-    // Contoh: "Pengisian ditolak. Unit DT020 sudah mengisi pada pukul 14:30, di Bays 1. Silahkan menunggu 4 jam 20 menit lagi."
-    const pesanSuara = `Pengisian ditolak. Unit ${unitInti} sudah mengisi pada pukul ${jamRefuel}, di LINE ${allowedLine}. Silahkan menunggu ${waktuSisaStr} lagi.`;
-    
+    // 4. Suara Error
+    const pesanSuara = `Pengisian ditolak. Unit ${fullUnitNumber} sudah mengisi pada pukul ${jamRefuel}, di ${allowedLine}. Silahkan menunggu ${waktuSisaStr} lagi.`;
     speak(pesanSuara, "error");
     playBeep("error");
 
