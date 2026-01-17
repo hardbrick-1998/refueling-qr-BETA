@@ -1110,7 +1110,7 @@ async function onScan(decodedText) {
   result.innerHTML = `<span class="result-status"><span class="result-status-icon">✓</span> QR: ${extractedUnit}</span>`;
   playBeep("scanning");
   
-  // 2. Cek apakah unit terdaftar di Database
+  // 2. Cek apakah unit terdaftar di Database (Frontend Check)
   if (!isValidUnitFrontend(decodedText)) {
     result.className = "status-invalid";
     result.innerHTML = `<span class="result-status"><span class="result-status-icon">❌</span> Unit tidak terdaftar!</span>`;
@@ -1119,43 +1119,64 @@ async function onScan(decodedText) {
     return;
   }
 
-  // 🔥 3. (BARU) CEK HISTORY LOKAL (OFFLINE GUARD) 🔥
-  const localCheck = checkLocalHistoryAllowed(extractedUnit);
+  // 🔥 PERUBAHAN LOGIKA DISINI (ONLINE FIRST) 🔥
+  // Kita cek koneksi internet dulu.
   
- if (!localCheck.allowed) {
-      // JIKA DITOLAK OLEH HP (Belum 8 Jam)
-      const sisaWaktu = toHourMinute(localCheck.minutesRemaining);
-      const jamTerakhir = localCheck.lastTime.getHours().toString().padStart(2, '0') + ":" + localCheck.lastTime.getMinutes().toString().padStart(2, '0');
+  if (navigator.onLine) {
+      // --- KASUS A: ONLINE ---
+      // Langsung tanya server (Abaikan cek lokal dulu, biar server yang memutuskan)
+      // Ini mengatasi masalah unit ditolak padahal di server sudah boleh.
       
-      // 🔥 INI BARIS BARU YANG WAJIB DITAMBAHKAN 🔥
-      // Fungsinya: Simpan laporan "Ditolak" ke antrean upload
-      reportRejectionDirectly(extractedUnit, "INTERVAL BELUM TERCAPAI");
-      // ----------------------------------------------------
+      apiRetryCount = 0;
+      const device = /Mobi|Android/i.test(navigator.userAgent) ? "Mobile" : "Desktop";
+      processQRCode(decodedText, device, result);
+      
+  } else {
+      // --- KASUS B: OFFLINE ---
+      // Baru kita gunakan logic "Offline Guard" (Satpam Lokal)
+      handleOfflineLogic(extractedUnit, decodedText, result);
+  }
+}   
 
-      result.className = "status-disallowed";
-      result.innerHTML = `
+// --- LOGIC PENANGANAN SAAT OFFLINE (SATPAM LOKAL) ---
+function handleOfflineLogic(unitId, originalText, result) {
+    // 1. Cek History Lokal
+    const localCheck = checkLocalHistoryAllowed(unitId);
+
+    if (!localCheck.allowed) {
+        // --- DITOLAK SECARA LOKAL ---
+        const sisaWaktu = toHourMinute(localCheck.minutesRemaining);
+        const jamTerakhir = localCheck.lastTime.getHours().toString().padStart(2, '0') + ":" + localCheck.lastTime.getMinutes().toString().padStart(2, '0');
+        
+        // Simpan Laporan Penolakan ke Antrean Upload
+        reportRejectionDirectly(unitId, "INTERVAL BELUM TERCAPAI (OFFLINE)");
+
+        result.className = "status-disallowed";
+        result.innerHTML = `
         <span class="result-status">
           <span class="result-status-icon">⛔</span>
-          <span class="result-unit">${extractedUnit} (OFFLINE GUARD)</span>
+          <span class="result-unit">${unitId} (OFFLINE GUARD)</span>
           <span class="result-remain">Baru isi jam ${jamTerakhir}. Tunggu ${sisaWaktu} lagi.</span>
         </span>
-      `;
-      speak(`Ditolak. Unit ini baru saja mengisi.`, "error");
-      playBeep("error");
-      stopScan(); // Hentikan scan agar petugas sadar
-      return; // Stop di sini, jangan lanjut ke server!
-  }
+        `;
+        speak(`Ditolak offline. Unit baru saja mengisi.`, "error");
+        playBeep("error");
+        stopScan(); 
 
-  // 4. Jika lolos semua cek, baru proses (Online/Offline)
-  const device = /Mobi|Android/i.test(navigator.userAgent) ? "Mobile" : "Desktop";
-  apiRetryCount = 0;
-  processQRCode(decodedText, device, result);
+    } else {
+        // --- DITERIMA SECARA LOKAL ---
+        // Unit belum pernah isi (di HP ini) atau sudah > 8 jam
+        processOfflineSuccess(originalText, result);
+    }
 }
 
+
 async function processQRCode(decodedText, device, result, retryCount = 0) {
-  // JIKA OFFLINE: Langsung bypass (Izinkan Input)
-  if (!isOnline) {
-    processOfflineSuccess(decodedText, result);
+  // 1. CEK KONEKSI BROWSER (Layer Pertama)
+  // Jika browser sadar dia offline, lempar ke Logic Offline (Satpam Lokal)
+  if (!navigator.onLine) {
+    const unitId = extractUnitNumber(decodedText);
+    handleOfflineLogic(unitId, decodedText, result);
     return;
   }
 
@@ -1170,25 +1191,40 @@ async function processQRCode(decodedText, device, result, retryCount = 0) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
     
-    const response = await fetch(apiUrl, { method: "POST", body: formData, signal: controller.signal });
+    // Tambahkan redirect: 'follow' agar aman di HP Android
+    const response = await fetch(apiUrl, { 
+        method: "POST", 
+        body: formData, 
+        signal: controller.signal,
+        redirect: "follow" 
+    });
+    
     clearTimeout(timeout);
     
     const data = await response.json();
     
     if (data.status === "success") {
+      // SUKSES DARI SERVER
       handleScanSuccess(data, decodedText, result);
     } else if (data.refuelingStatus === "INVALID_QR") {
+      // QR TIDAK DIKENAL SERVER
       result.className = "status-invalid";
       result.innerHTML = `<span class="result-status"><span class="result-status-icon">❌</span> ${data.message}</span>`;
       speak(data.message, "error");
     } else {
-      // Disallowed dll
+      // DITOLAK SERVER (Disallowed)
       handleScanSuccess(data, decodedText, result);
     }
+
   } catch (err) {
-    console.warn("Gagal koneksi server, masuk mode offline:", err);
-    // JIKA ERROR KONEKSI: Anggap Offline & Izinkan Input
-    processOfflineSuccess(decodedText, result);
+    console.warn("⚠️ Gagal koneksi server (Timeout/Error), beralih ke Satpam Lokal:", err);
+    
+    // 🔥 REVISI PENTING DISINI (FALLBACK) 🔥
+    // Jangan langsung 'processOfflineSuccess' (Diterima).
+    // Kita harus tanya dulu ke 'handleOfflineLogic' (Cek history lokal).
+    
+    const unitId = extractUnitNumber(decodedText);
+    handleOfflineLogic(unitId, decodedText, result);
   }
 }
 
