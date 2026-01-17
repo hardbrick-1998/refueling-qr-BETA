@@ -650,6 +650,7 @@
 
 let isSyncing = false; // Kunci untuk mencegah duplikasi pengiriman antreans
 let currentUnitId = null; // <--- TEMPELKAN DI SINI (Variabel Global)
+let currentLastHM = 0; // <--- Tambahkan ini untuk menyimpan history HM dari server
 let isProcessing = false; // Kunci agar tidak terjadi pengiriman ganda
 
 const CREDS = {
@@ -659,7 +660,7 @@ const CREDS = {
 };
 
 // ✅ UPDATED URL - Apps Script V20.0
-const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbyUMfjSu4SBzg1u8nX0WVRMDTGaQ8YglL9KlcgnZrEgX1ON73R7gZSkUqZCnoz2PSZOMw/exec";
+const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbxujaKJrFAxkAeWHiOM15O4mTvSK_IX7pv96otSI2LzhEEY36YwHEqn9eNYoWG9TCPkcg/exec";
 
 let user = null, line = null, qr = null, scanning = false, lastCode = null;
 let cameraFacing = "environment";
@@ -1224,6 +1225,9 @@ function handleScanSuccess(data, decodedText, result) {
     // Simpan ke Global
     currentUnitId = data.unitId; 
     
+    currentLastHM = parseFloat(data.lastHM) || 0; 
+    console.log("History HM ditemukan:", currentLastHM);
+
     // Matikan Kamera & Feedback
     stopScan(); 
     playBeep("success");
@@ -1413,27 +1417,100 @@ function checkLiterLimit(input) {
 // 🔥 UPDATE FUNGSI SUBMIT (LOGIKA FIX & BERSIH)
 
 async function submitFinalData() {
-    if (isProcessing) return; // Jika sedang proses, abaikan klik berikutnya
+    // 1. Cek apakah sedang memproses data sebelumnya?
+    if (isProcessing) return; 
 
     const btn = document.getElementById('saveLiterBtn');
-    const literVal = document.getElementById('literInput').value;
-    const hmVal = document.getElementById('hmInput').value;
+    const literInput = document.getElementById('literInput');
+    const hmInput = document.getElementById('hmInput');
+    
+    // Ambil value dan ubah ke Angka (Float) agar bisa dihitung
+    const literVal = parseFloat(literInput.value);
+    const hmVal = parseFloat(hmInput.value); // PENTING: HM harus jadi angka untuk validasi lonjakan
 
-    // Validasi dasar
-    if (!literVal || !hmVal) {
-        alert("Mohon isi Jumlah Solar dan HM!");
+    // --- BATAS PENGISIAN ---
+    const MAX_LITER = 333;
+
+    // 2. VALIDASI DASAR (KOSONG)
+    if (!literInput.value || !hmInput.value) {
+        alert("⚠️ Mohon isi Jumlah Solar dan HM!");
         return;
     }
 
-    // KUNCI PROSES
+    // 3. 🔥 VALIDASI BATAS ATAS (MAKSIMAL 333 LITER) 🔥
+    if (literVal > MAX_LITER) {
+        alert(`❌ ERROR: MELEBIHI KAPASITAS!\nMaksimal pengisian adalah ${MAX_LITER} Liter.`);
+        
+        if (typeof speak === "function") speak(`Pengisian terlalu banyak. Maksimal ${MAX_LITER} liter.`, "error");
+        if (typeof playBeep === "function") playBeep("error");
+        
+        literInput.style.borderColor = "red"; 
+        literInput.value = ""; 
+        literInput.focus();
+        
+        return; // ⛔ STOP DISINI
+    }
+
+    // 4. 🔥 VALIDASI BATAS BAWAH (MINUS ATAU 0) 🔥
+    if (literVal <= 0) {
+        alert("❌ ERROR: JUMLAH TIDAK VALID!\nJumlah solar tidak boleh 0 atau minus.");
+        
+        if (typeof speak === "function") speak("Jumlah liter tidak valid.", "error");
+        if (typeof playBeep === "function") playBeep("error");
+
+        literInput.style.borderColor = "red";
+        literInput.focus();
+        
+        return; // ⛔ STOP DISINI
+    }
+
+    // 5. 🔥 DETEKSI ANOMALI HM (SOFT VALIDATION) 🔥
+    // Logika ini hanya jalan jika 'currentLastHM' memiliki nilai (dari Backend)
+    if (currentLastHM > 0) {
+        let isAnomaly = false;
+        let warningText = "";
+
+        // KASUS A: HM Turun (Current < Last)
+        if (hmVal < currentLastHM) {
+            isAnomaly = true;
+            warningText = `⚠️ PERINGATAN: HM TURUN!\n\nHM terakhir: ${currentLastHM}\nHM sekarang: ${hmVal}\n\nNilai HM lebih kecil dari sebelumnya.`;
+        } 
+        // KASUS B: HM Loncat > 20 Jam
+        else if (hmVal > (currentLastHM + 20)) {
+            isAnomaly = true;
+            warningText = `⚠️ PERINGATAN: LONJAKAN HM!\n\nHM terakhir: ${currentLastHM}\nHM sekarang: ${hmVal}\n\nAda kenaikan drastis lebih dari 20 jam.`;
+        }
+
+        // JIKA ADA ANOMALI, TAMPILKAN KONFIRMASI
+        if (isAnomaly) {
+            // Mainkan suara peringatan
+            if (typeof speak === "function") speak("Peringatan. Periksa kembali input Hour Meter.", "error");
+            if (typeof playBeep === "function") playBeep("error");
+
+            // Munculkan Dialog Konfirmasi
+            const userConfirmed = confirm(`${warningText}\n\nHM mu terakhir pengisian adalah ${currentLastHM}.\nApakah anda yakin nilai HM anda sekarang ${hmVal}?`);
+
+            if (!userConfirmed) {
+                // Jika User pilih "Cancel" / "Tidak"
+                hmInput.focus();
+                hmInput.style.borderColor = "red";
+                return; // ⛔ BATALKAN PENGIRIMAN
+            }
+            // Jika User pilih "OK", lanjut ke bawah (Kirim Data)
+        }
+    }
+
+    // --- JIKA LOLOS SEMUA VALIDASI, BARU PROSES ---
+    
+    // KUNCI TOMBOL
     isProcessing = true;
     btn.disabled = true;
     btn.innerHTML = "⏳ MENGIRIM...";
 
     const payload = {
         unitId: currentUnitId,
-        liter: literVal,
-        hm: hmVal,
+        liter: literVal, // Kirim angka valid
+        hm: hmVal,       // Kirim angka valid
         line: user,
         device: "Mobile Trial"
     };
@@ -1447,7 +1524,7 @@ async function submitFinalData() {
         formData.append("line", payload.line);
         formData.append("device", payload.device);
 
-        // Timeout 10 detik agar tidak menunggu selamanya
+        // Timeout 10 detik
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 10000);
 
@@ -1461,8 +1538,9 @@ async function submitFinalData() {
         const resData = await response.json();
 
         if (resData.status === "success") {
-            // ✅ JIKA SUKSES ONLINE: Langsung catat history 8 jam lokal dan SELESAI
+            // ✅ SUKSES ONLINE
             saveLocalHistory(currentUnitId);
+            if (typeof playBeep === "function") playBeep("success");
             alert("✅ DATA BERHASIL TERKIRIM!");
             location.reload(); 
         } else {
@@ -1472,7 +1550,7 @@ async function submitFinalData() {
     } catch (err) {
         console.warn("⚠️ Gagal Online, Beralih ke Offline:", err);
         
-        // ⚠️ HANYA MASUK KE OFFLINE JIKA INTERNET BENAR-BENAR MATI/TIMEOUT
+        // ⚠️ MASUK OFFLINE
         saveLocalHistory(currentUnitId);
         
         // Simpan ke antrean offline
@@ -1480,16 +1558,15 @@ async function submitFinalData() {
         queue.push(payload);
         localStorage.setItem('pendingRefuels', JSON.stringify(queue));
         
-        alert("📡 MODE OFFLINE: Data disimpan di HP (Akan terkirim otomatis saat sinyal bagus)");
+        alert("📡 MODE OFFLINE: Data disimpan di HP (Akan terkirim otomatis saat Device mendapatkan sinyal)");
         location.reload();
     } finally {
         isProcessing = false;
     }
 }
 
-// ==========================================
+
 // 🔄 FUNGSI SINKRONISASI (DATA LITER + LAPORAN PENOLAKAN)
-// ==========================================
 
 async function uploadPendingData() {
     if (isSyncing) return; // Jika sedang proses, jangan jalankan lagi
