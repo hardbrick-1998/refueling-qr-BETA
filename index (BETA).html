@@ -1564,6 +1564,16 @@ async function submitFinalData() {
     } catch (err) {
         console.warn("⚠️ Gagal Online, Beralih ke Offline:", err);
         
+        // --- DIAGNOSA ERROR ---
+        // Kita cek apakah ini murni masalah sinyal atau masalah kodingan/server
+        if (!navigator.onLine) {
+             // Ini beneran Offline (Internet mati)
+             alert("📡 MODE OFFLINE: Sinyal HP hilang. Data disimpan di internal.");
+        } else {
+             // Ini Internet Nyala tapi Server Menolak (Kemungkinan masalah Deploy/Script)
+             alert(`⚠️ GAGAL KONEKSI SERVER!\n\nPesan Error: ${err.message}\n\n(Internet anda aktif, tapi Server menolak. Cek Izin Deployment Script "Anyone").\n\nData tetap disimpan di HP.`);
+        }
+
         // ⚠️ MASUK OFFLINE
         saveLocalHistory(currentUnitId);
         
