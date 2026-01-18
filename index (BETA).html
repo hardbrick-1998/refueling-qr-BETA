@@ -698,6 +698,7 @@ let isSyncing = false; // Kunci untuk mencegah duplikasi pengiriman antreans
 let currentUnitId = null; // <--- TEMPELKAN DI SINI (Variabel Global)
 let currentLastHM = 0; // <--- Tambahkan ini untuk menyimpan history HM dari server
 let isProcessing = false; // Kunci agar tidak terjadi pengiriman ganda
+let bannerTimeout = null; // <--- TAMBAHKAN INI (Untuk mengontrol timer banner)
 
 const CREDS = {
   "bays 1": { pwd: "qwerty", line: "A" },
@@ -727,7 +728,20 @@ window.addEventListener('online', () => {
 
 window.addEventListener('offline', () => {
   isOnline = false;
-  document.getElementById('offlineBanner').classList.add('show');
+  
+  const banner = document.getElementById('offlineBanner');
+  
+  // 1. Matikan timer "Success" jika sedang berjalan (Agar banner tidak hilang sendiri)
+  if (bannerTimeout) clearTimeout(bannerTimeout);
+
+  // 2. Paksa Reset Tampilan (Hapus Hijau, Paksa Merah)
+  banner.classList.remove('success-sync'); 
+  
+  // 3. Paksa Ganti Teks
+  banner.innerHTML = "📡 Mode Offline - Data akan disimpan lokal";
+  
+  // 4. Munculkan Banner
+  banner.classList.add('show');
 });
 
 window.addEventListener("load", () => {
@@ -1713,9 +1727,14 @@ async function uploadPendingData() {
         if (typeof playBeep === 'function') playBeep("success");
 
         // Tahan banner hijau selama 4 detik, lalu sembunyikan
-        setTimeout(() => {
-            banner.classList.remove('show');
-            banner.classList.remove('success-sync'); 
+        if (bannerTimeout) clearTimeout(bannerTimeout); // Reset timer lama jika ada
+        
+        bannerTimeout = setTimeout(() => {
+            // Cek lagi: Kalau tiba-tiba offline saat nunggu, jangan sembunyikan!
+            if (navigator.onLine) { 
+                banner.classList.remove('show');
+                banner.classList.remove('success-sync'); 
+            }
             isSyncing = false; // 🔓 Buka kunci
         }, 4000);
 
