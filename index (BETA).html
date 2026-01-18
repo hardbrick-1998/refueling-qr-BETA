@@ -707,7 +707,7 @@ const CREDS = {
 };
 
 // ✅ UPDATED URL - Apps Script V20.0
-const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbzPXTW7nfQHf93uwR2vH39IyN-3qxjjbDRoSI1rDaR6srH0lciYUxA7iTgO_whBLJdTPg/exec";
+const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbx8JqvvALMWU4_6U2OZw7Ar9u_88TmrllVLeZQYtXXvjcd6ncFGFU_dmKEEQM2qgUTyCw/exec";
 
 let user = null, line = null, qr = null, scanning = false, lastCode = null;
 let cameraFacing = "environment";
@@ -770,24 +770,37 @@ function extractUnitIdFromQR(qrData) {
 
 async function loadRefuelDatabase() {
   try {
-    // --- SKENARIO 1: JIKA ONLINE (Download Kamus Data dari Server) ---
+    // --- SKENARIO 1: JIKA ONLINE (Download Kamus Data + History Global) ---
     if (isOnline) {
       const formData = new FormData();
       formData.append("action", "getRefuelDB");
       formData.append("line", line);
       
-      const response = await fetch(apiUrl, { method: "POST", body: formData });
+      // Tips: Tambahkan redirect: 'follow' agar aman di Android
+      const response = await fetch(apiUrl, { method: "POST", body: formData, redirect: "follow" });
       const data = await response.json();
       
       if (data.status === 'success') {
-        // PERUBAHAN UTAMA DI SINI:
-        // Kita ambil "unitDetails" (Kamus ID + Nama), bukan cuma ID saja.
+        // A. UPDATE SPEK UNIT (KAMUS)
+        // Kita ambil "unitDetails" (Kamus ID + Nama)
         const dictionary = data.refuelDB.unitDetails || {}; 
         
-        // 1. Simpan Kamus Lengkap ke Memori HP (Untuk Offline Mode)
+        // Simpan Kamus Lengkap ke Memori HP
         localStorage.setItem('unitDetailsDB', JSON.stringify(dictionary)); 
         
-        // 2. Ambil Kunci ID-nya saja untuk Validasi Scan (Boleh/Tidak)
+        // 🔥 B. UPDATE HISTORY GLOBAL (BAGIAN BARU - SMART OFFLINE GUARD) 🔥
+        // Kita ambil data history transaksi terakhir dari seluruh Bays (yang dikirim Backend)
+        const serverHistory = data.refuelDB.lastHistory || {};
+        
+        // Simpan ke memori 'unitHistory' di HP.
+        // Dengan ini, HP Bays 3 jadi "tahu" kalau Unit X baru saja isi di Bays 1.
+        // Cek dulu apakah datanya ada, baru simpan.
+        if (Object.keys(serverHistory).length > 0) {
+             localStorage.setItem('unitHistory', JSON.stringify(serverHistory));
+             console.log(`🔄 Global History Terupdate: ${Object.keys(serverHistory).length} data transaksi.`);
+        }
+        
+        // C. Update Set Validasi (RAM)
         const units = Object.keys(dictionary);
         validUnitIds = new Set(units);
         
@@ -808,7 +821,7 @@ async function loadRefuelDatabase() {
     }
   } catch (err) {
     console.error('Gagal load DataBase, mencoba akses lokal:', err);
-    // Fallback darurat
+    // Fallback darurat jika server error/timeout
     const localDetails = localStorage.getItem('unitDetailsDB');
     if (localDetails) {
         const dictionary = JSON.parse(localDetails);
