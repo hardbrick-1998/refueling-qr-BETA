@@ -519,8 +519,40 @@
           width: 100% !important;
       }
       
-      .scanner-header h1 { display: none; } /* Sembunyikan judul di header HP biar lega */
-      .scanner-header { justify-content: center; padding: 15px; }
+      /* --- REVISI HEADER MOJOK KANAN --- */
+      .scanner-header { 
+          display: flex;
+          justify-content: space-between; /* Pisahkan Kiri (Judul) dan Kanan (Info) sejauh mungkin */
+          align-items: center;
+          padding: 15px 20px; /* Tambah padding dikit biar ga nempel layar */
+      }
+
+      /* Tampilkan judul "QR Scan" tapi kecil saja sebagai penyeimbang di Kiri */
+      .scanner-header h1 { 
+          display: block !important; 
+          font-size: 16px; 
+          margin: 0;
+      } 
+      
+      /* Area Kanan (Bays & Logout) */
+      .header-info {
+          display: flex;
+          flex-direction: column; /* Susun Atas-Bawah biar rapi */
+          align-items: flex-end;  /* Rata Kanan MENTOK */
+          gap: 6px; /* Jarak antara badge dan tombol */
+      }
+      
+      /* Kecilkan dikit font badge di HP */
+      .user-badge { 
+          font-size: 12px; 
+          padding: 4px 10px; 
+      }
+      
+      .logout-btn {
+          font-size: 11px;
+          padding: 4px 10px;
+      }
+
       .qr-display-area { padding: 20px; }
       #targetUnitID { font-size: 32px !important; }
     }
