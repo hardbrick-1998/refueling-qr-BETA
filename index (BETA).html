@@ -1230,7 +1230,7 @@ function handleOfflineLogic(unitId, originalText, result) {
           <button onclick="startScan()" style="margin-top: 15px; background: rgba(220, 38, 38, 0.2); border: 1px solid var(--neon-red); color: var(--neon-red); padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; font-family: 'Orbitron'; text-transform: uppercase;">SCAN UNIT LAIN 🔄</button>
         </div>
         `;
-        speak(`Ditolak offline. Unit baru saja mengisi.`, "error");
+        speak(`Ditolak (Mode offline). Unit baru saja mengisi.`, "error");
         playBeep("error");
         
         stopScan(true); // <--- REVISI: PAKAI TRUE (SILENT)
