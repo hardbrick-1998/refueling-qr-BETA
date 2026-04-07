@@ -620,7 +620,7 @@
   </div>
   
   <div id="fuelmanDisplay" style="width: 100%; background: var(--neon-blue); color: #000; padding: 10px; border-radius: 8px; text-align: center;">
-      <span style="font-size: 14px; font-weight: bold; display: block; opacity: 0.8;">FUELMAN SEDANG BERTUGAS A.N = :</span>
+      <span style="font-size: 14px; font-weight: bold; display: block; opacity: 0.8;">FUELMAN SEDANG BERTUGAS </span>
       <strong id="activeFuelmanName" style="font-size: 24px; font-family: 'Orbitron'; letter-spacing: 2px;">-</strong>
   </div>
   
@@ -643,7 +643,7 @@
         </label>
         
         <div style="display: flex; gap: 8px;">
-            <input type="text" id="manualInput" 
+            <input type="text" id="manualInput" inputmode="none"
                    placeholder="KODE UNIT" 
                    style="flex: 1; padding: 12px; border-radius: 8px; border: 2px solid #00f2ff; background: #000; color: #fff; text-align: center; font-weight: bold; font-size: 18px; text-transform: uppercase;"
                    onkeypress="handleManualInput(event)"
@@ -1171,6 +1171,12 @@ function startScan() {
     // KUNCI TOMBOL (Scanning aktif)
     scanning = true; 
 
+    // 🔥 AUTO FOKUS KE KOTAK ZEBRA SAAT KAMERA NYALA
+    setTimeout(() => {
+        let manualBox = document.getElementById("manualInput");
+        if(manualBox) manualBox.focus();
+    }, 500);
+    
     qr.start(
       { facingMode: cameraFacing }, 
       { fps: 10, qrbox: 250 }, 
