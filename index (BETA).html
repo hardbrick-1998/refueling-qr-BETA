@@ -617,17 +617,38 @@
   </div>
   <div class="scanner-content">
     <div class="scanner-main"> <div class="qr-display-area">
-        <h2>Scan QR Code</h2>
-        <div class="qr-reader-wrapper">
-          <div id="qr-reader"></div>
-          <button class="camera-toggle-btn" id="cameraToggleBtn" onclick="toggleCamera()" title="Tukar Kamera">📷</button>
+    <h2 style="margin-bottom: 10px;">Scan QR Code</h2>
+    
+    <div class="qr-reader-wrapper">
+      <div id="qr-reader"></div>
+      <button class="camera-toggle-btn" id="cameraToggleBtn" onclick="toggleCamera()" title="Tukar Kamera">📷</button>
+    </div>
+
+    <div id="result" style="margin: 10px 0;"><span>Tekan ▶ untuk mulai / Scan Zebra</span></div>
+
+   <div style="margin: 15px 0; background: rgba(0, 0, 0, 0.3); padding: 10px; border-radius: 12px; border: 1px dashed #00f2ff;">
+        <label style="color: #00f2ff; font-size: 12px; font-weight:bold; display: block; margin-bottom: 5px;">
+            👇 SCAN ZEBRA / KETIK MANUAL:
+        </label>
+        
+        <div style="display: flex; gap: 8px;">
+            <input type="text" id="manualInput" 
+                   placeholder="KODE UNIT" 
+                   style="flex: 1; padding: 12px; border-radius: 8px; border: 2px solid #00f2ff; background: #000; color: #fff; text-align: center; font-weight: bold; font-size: 18px; text-transform: uppercase;"
+                   onkeypress="handleManualInput(event)"
+                   autocomplete="off">
+            
+            <button onclick="triggerManualScan()" 
+                    style="background: #00f2ff; color: #000; border: none; font-weight: bold; padding: 0 20px; border-radius: 8px; cursor: pointer; font-size: 16px;">
+                GO ➔
+            </button>
         </div>
-        <div id="result"><span>Tekan ▶ untuk mulai</span></div>
-        <div class="action-btns">
-          <button id="startBtn">▶</button>
-          <button id="stopBtn">⏹</button>
-        </div>
-      </div>
+    </div>
+    <div class="action-btns">
+      <button id="startBtn" onclick="startScanner()" class="btn-scan-control">▶ MULAI KAMERA</button>
+      <button id="stopBtn" onclick="stopScanner()" class="btn-scan-control" style="background: #ff3b3b;">⏹ STOP</button>
+    </div>
+</div>
 
         <div id="quantityArea" style="display: none; background: white; border-radius: 24px; padding: 30px 15px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.08); width: 100%; margin: 0 auto; box-sizing: border-box;">
         
@@ -1896,6 +1917,70 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+<script>
+  // 1. Fungsi saat tombol Enter ditekan (Oleh Zebra Scanner)
+  function handleManualInput(e) {
+    if (e.key === "Enter") {
+        prosesDataScan();
+    }
+  }
 
+  // 2. Fungsi saat tombol GO diklik (Oleh Mouse/Jari)
+  function triggerManualScan() {
+    prosesDataScan();
+  }
+
+  // 3. Otak Utamanya (Memproses Data)
+  function prosesDataScan() {
+    // Ambil elemen kotak input
+    let input = document.getElementById("manualInput");
+    
+    // Ambil teksnya, buang spasi, dan jadikan HURUF BESAR
+    let code = input.value.trim().toUpperCase(); 
+    
+    // Cek apakah kotak kosong?
+    if (code.length === 0) {
+        alert("Mohon isi Kode Unit dulu!");
+        input.focus();
+        return;
+    }
+
+    console.log("Input Diterima: " + code);
+    
+    // Bunyikan Beep (Tanda sukses)
+    let beep = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
+    beep.play().catch(err => console.log("Audio blocked"));
+
+    // Kirim data ke sistem utama (agar pindah halaman)
+    // Kita cek fungsi mana yang tersedia di aplikasi rekan Anda
+    if (typeof handleScanResult === "function") {
+        handleScanResult(code); 
+    } 
+    else if (typeof onScanSuccess === "function") {
+        onScanSuccess(code, null);
+    }
+    else {
+        alert("Scan Berhasil: " + code + "\n(Tapi script utama tidak ditemukan, cek console)");
+    }
+
+    // Bersihkan kotak input setelah sukses
+    input.value = "";
+    input.blur(); 
+  }
+
+  // Fitur Tambahan: Auto Focus (Opsional)
+  // Memastikan kursor siap mengetik saat menu scan dibuka
+  setInterval(() => {
+     let inputBox = document.getElementById("manualInput");
+     let scanArea = document.querySelector(".qr-display-area");
+     
+     // Jika kotak input ada, terlihat, dan kosong -> Fokuskan kursor
+     if (inputBox && scanArea && scanArea.style.display !== 'none' && inputBox.value === "") {
+         if (document.activeElement !== inputBox) {
+            // inputBox.focus(); // Hapus tanda // di depan jika ingin auto-focus aktif
+         }
+     }
+  }, 1000);
+</script>
 </body>
 </html>
