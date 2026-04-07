@@ -1176,7 +1176,7 @@ function startScan() {
         let manualBox = document.getElementById("manualInput");
         if(manualBox) manualBox.focus();
     }, 500);
-    
+
     qr.start(
       { facingMode: cameraFacing }, 
       { fps: 10, qrbox: 250 }, 
@@ -1998,19 +1998,22 @@ if ('serviceWorker' in navigator) {
     input.blur(); 
   }
 
-  // Fitur Tambahan: Auto Focus (Opsional)
-  // Memastikan kursor siap mengetik saat menu scan dibuka
+  
+  // 🔥 AUTO-FOCUS LOCK UNTUK ZEBRA SCANNER 🔥
+  // Memastikan Zebra Scanner selalu siap sedia kapanpun laser ditekan
   setInterval(() => {
      let inputBox = document.getElementById("manualInput");
      let scanArea = document.querySelector(".qr-display-area");
+     let quantityArea = document.getElementById("quantityArea");
      
-     // Jika kotak input ada, terlihat, dan kosong -> Fokuskan kursor
-     if (inputBox && scanArea && scanArea.style.display !== 'none' && inputBox.value === "") {
+     // Cek: Jika kamera sedang nyala (scanArea tampil) & belum masuk menu isi liter (quantityArea sembunyi)
+     if (inputBox && scanArea && scanArea.style.display !== 'none' && quantityArea.style.display === 'none') {
+         // Jika kursor hilang dari kotak, paksa kembali!
          if (document.activeElement !== inputBox) {
-            // inputBox.focus(); // Hapus tanda // di depan jika ingin auto-focus aktif
+             inputBox.focus(); 
          }
      }
-  }, 1000);
+  }, 1500); // Mengecek setiap 1.5 detik
 </script>
 </body>
 </html>
