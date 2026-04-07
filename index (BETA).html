@@ -588,6 +588,11 @@
       <div class="error-box" id="errorMsg"></div>
       <form onsubmit="handleLogin(event)">
         <div class="form-group">
+          <label>👤 Nama Fuelman</label>
+          <input type="text" id="fuelmanName" placeholder="Masukkan Nama Anda" required 
+            style="text-transform: uppercase;">
+        </div>
+        <div class="form-group">
           <label>Username Bays</label>
           <select id="bays" required>
             <option value="">Pilih Bays</option>
@@ -608,13 +613,19 @@
 </div>
 
 <div id="scannerPage">
-  <div class="scanner-header">
-    <h1>📱 QR Scan</h1>
-    <div class="header-info">
-      <div class="user-badge" id="userInfo">-</div>
+  <div class="scanner-header" style="flex-direction: column; align-items: flex-start; gap: 10px;">
+  <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+      <h1 style="font-size: 18px;">📱 QR Scan</h1>
       <button class="logout-btn" onclick="logout()">Logout</button>
-    </div>
   </div>
+  
+  <div id="fuelmanDisplay" style="width: 100%; background: var(--neon-blue); color: #000; padding: 10px; border-radius: 8px; text-align: center;">
+      <span style="font-size: 12px; font-weight: bold; display: block; opacity: 0.8;">FUELMAN AKTIF:</span>
+      <strong id="activeFuelmanName" style="font-size: 24px; font-family: 'Orbitron'; letter-spacing: 2px;">-</strong>
+  </div>
+  
+  <div class="user-badge" id="userInfo" style="width: 100%; text-align: center;">-</div>
+</div>
   <div class="scanner-content">
     <div class="scanner-main"> <div class="qr-display-area">
     <h2 style="margin-bottom: 10px;">Scan QR Code</h2>
@@ -624,7 +635,7 @@
       <button class="camera-toggle-btn" id="cameraToggleBtn" onclick="toggleCamera()" title="Tukar Kamera">📷</button>
     </div>
 
-    <div id="result" style="margin: 10px 0;"><span>Tekan ▶ untuk mulai </span></div>
+    <div id="result" style="margin: 10px 0;"><span>Tekan ▶ untuk mulai SCAN via KAMERA HP </span></div>
 
    <div style="margin: 15px 0; background: rgba(0, 0, 0, 0.3); padding: 10px; border-radius: 12px; border: 1px dashed #00f2ff;">
         <label style="color: #00f2ff; font-size: 12px; font-weight:bold; display: block; margin-bottom: 5px;">
@@ -645,8 +656,9 @@
         </div>
     </div>
     <div class="action-btns">
-      <button id="startBtn" onclick="startScanner()" class="btn-scan-control">▶ MULAI KAMERA</button>
-      <button id="stopBtn" onclick="stopScanner()" class="btn-scan-control" style="background: #ff3b3b;">⏹ STOP</button>
+      <button id="startBtn" onclick="startScanner()" class="btn-scan-control" title="Mulai Kamera">▶</button>
+      
+      <button id="stopBtn" onclick="stopScanner()" class="btn-scan-control" title="Hentikan Kamera">⏹</button>
     </div>
 </div>
 
@@ -728,7 +740,7 @@ const CREDS = {
 };
 
 // ✅ UPDATED URL - Apps Script V20.0
-const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbxSw-MkiOCwrJLZvhGNfqdFiWsMtomPXMOWh7sIAlvDyZ1K-uluB-mVVecLBiZcA6eSSQ/exec";
+const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbyzoyT87NkDu5BCX9iv1kz8mTohTdvS3jCgeWvK7rYALPxulOmlnyjQB-GVRZWrFVcT3Q/exec";
 
 let user = null, line = null, qr = null, scanning = false, lastCode = null;
 let cameraFacing = "environment";
@@ -868,18 +880,20 @@ function handleLogin(e) {
   e.preventDefault();
   const b = document.getElementById("bays").value;
   const p = document.getElementById("pwd").value;
+  const name = document.getElementById("fuelmanName").value.trim().toUpperCase(); // Ambil Nama
   const err = document.getElementById("errorMsg");
-  const loginBtn = document.getElementById("loginBtn");
   
-  if(!b || !CREDS[b] || CREDS[b].pwd !== p) {
-    err.textContent = "❌ Username atau password salah!";
+  if(!b || !CREDS[b] || CREDS[b].pwd !== p || !name) {
+    err.textContent = "❌ Mohon Lengkapi Nama Anda, Bays Anda, dan Isi Password dengan Benar!";
     err.style.display = "block";
     return;
   }
   
   user = b;
   line = CREDS[b].line;
-  localStorage.setItem("s", JSON.stringify({ u: user, l: line }));
+  // Simpan Sesi (Termasuk Nama Fuelman)
+  localStorage.setItem("s", JSON.stringify({ u: user, l: line, n: name }));
+  
   document.querySelector("form").reset();
   err.style.display = "none";
   
@@ -912,6 +926,12 @@ function transitionToScanner() {
     scannerPage.offsetHeight;
     scannerPage.classList.add("slide-up-fade-in");
     scannerPage.classList.add("active");
+    
+    // --- MENGAMBIL DAN MENAMPILKAN NAMA FUELMAN DI SINI ---
+    const session = JSON.parse(localStorage.getItem("s"));
+    if (session && session.n) {
+        document.getElementById("activeFuelmanName").textContent = session.n;
+    }
     
     document.getElementById("userInfo").textContent = `👤 ${user.toUpperCase()} (${line}) | Units: ${validUnitIds.size}`;
     
@@ -958,6 +978,13 @@ function showScanner() {
   loginPage.style.display = "none";
   scannerPage.style.display = "flex";
   scannerPage.classList.add("active");
+  
+  // --- MENGAMBIL DAN MENAMPILKAN NAMA FUELMAN DI SINI ---
+  const session = JSON.parse(localStorage.getItem("s"));
+  if (session && session.n) {
+      document.getElementById("activeFuelmanName").textContent = session.n;
+  }
+  
   document.getElementById("userInfo").textContent = `👤 ${user.toUpperCase()} (${line})`;
   
   setTimeout(() => {
