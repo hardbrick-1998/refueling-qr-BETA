@@ -593,7 +593,7 @@
             style="text-transform: uppercase;">
         </div>
         <div class="form-group">
-          <label>Username Bays</label>
+          <label>Lokasi Bays</label>
           <select id="bays" required>
             <option value="">Pilih Bays</option>
             <option value="bays 1">Bays 1 (LINE A)</option>
@@ -620,7 +620,7 @@
   </div>
   
   <div id="fuelmanDisplay" style="width: 100%; background: var(--neon-blue); color: #000; padding: 10px; border-radius: 8px; text-align: center;">
-      <span style="font-size: 12px; font-weight: bold; display: block; opacity: 0.8;">FUELMAN AKTIF:</span>
+      <span style="font-size: 12px; font-weight: bold; display: block; opacity: 0.8;">FUELMAN SEDANG BERTUGAS:</span>
       <strong id="activeFuelmanName" style="font-size: 24px; font-family: 'Orbitron'; letter-spacing: 2px;">-</strong>
   </div>
   
@@ -1626,22 +1626,27 @@ async function submitFinalData() {
     btn.disabled = true;
     btn.innerHTML = "⏳ MENGIRIM...";
 
-    const payload = {
-        unitId: currentUnitId,
-        liter: literVal, // Kirim angka valid
-        hm: hmVal,       // Kirim angka valid
-        line: user,
-        device: "Mobile Trial"
-    };
+    // 🔥 AMBIL NAMA FUELMAN DARI MEMORI HP
+     const session = JSON.parse(localStorage.getItem("s"));
 
-    try {
-        const formData = new FormData();
-        formData.append("action", "submitRefuel");
-        formData.append("unitId", payload.unitId);
-        formData.append("liter", payload.liter);
-        formData.append("hm", payload.hm);
-        formData.append("line", payload.line);
-        formData.append("device", payload.device);
+     const payload = {
+         unitId: currentUnitId,
+         liter: literVal,
+         hm: hmVal,
+         line: user,
+         fuelman: session ? session.n : "TIDAK TERDETEKSI", // <--- Masukkan nama ke keranjang
+         device: "Mobile Trial"
+     };
+
+     try {
+         const formData = new FormData();
+         formData.append("action", "submitRefuel");
+         formData.append("unitId", payload.unitId);
+         formData.append("liter", payload.liter);
+         formData.append("hm", payload.hm);
+         formData.append("line", payload.line);
+         formData.append("device", payload.device);
+         formData.append("fuelman", payload.fuelman); // 🔥 INI KUNCI PENGIRIMANNYA!
 
         // Timeout 10 detik
         const controller = new AbortController();
@@ -1728,43 +1733,44 @@ async function uploadPendingData() {
     let failedRejections = [];
 
     // --- 1. PROSES REFUEL ---
-    for (const item of refuelQueue) {
-        try {
-            const formData = new FormData();
-            formData.append("action", "submitRefuel");
-            formData.append("unitId", item.unitId);
-            formData.append("liter", item.liter);
-            formData.append("hm", item.hm);
-            formData.append("line", item.line);
-            formData.append("device", "Mobile (Synced)");
-            if(item.timestamp) formData.append("originalTime", item.timestamp);
+     for (const item of refuelQueue) {
+         try {
+             const formData = new FormData();
+             formData.append("action", "submitRefuel");
+             formData.append("unitId", item.unitId);
+             formData.append("liter", item.liter);
+             formData.append("hm", item.hm);
+             formData.append("line", item.line);
+             formData.append("device", "Mobile (Synced)");
+             formData.append("fuelman", item.fuelman || "TIDAK TERDETEKSI"); // 🔥 TAMBAHAN NAMA
+             if(item.timestamp) formData.append("originalTime", item.timestamp);
 
-            const response = await fetch(apiUrl, { method: "POST", body: formData, redirect: "follow" });
-            // Cek apakah server merespon success
-            const resData = await response.json();
-            if(resData.status !== "success") throw new Error("Server Error");
+             const response = await fetch(apiUrl, { method: "POST", body: formData, redirect: "follow" });
+             const resData = await response.json();
+             if(resData.status !== "success") throw new Error("Server Error");
 
-        } catch (err) {
-            console.warn("Gagal kirim item refuel:", err);
-            failedRefuels.push(item); // Tampung untuk dikembalikan
-        }
-    }
+         } catch (err) {
+             console.warn("Gagal kirim item refuel:", err);
+             failedRefuels.push(item);
+         }
+     }
 
-    // --- 2. PROSES PENOLAKAN (WA) ---
-    for (const item of rejectQueue) {
-        try {
-            const formData = new FormData();
-            formData.append("action", "reportOfflineRejection");
-            formData.append("unitId", item.unitId);
-            formData.append("line", item.line);
-            formData.append("timestamp", item.timestamp);
-            
-            await fetch(apiUrl, { method: "POST", body: formData });
-        } catch (err) {
-            console.warn("Gagal kirim item reject:", err);
-            failedRejections.push(item);
-        }
-    }
+     // --- 2. PROSES PENOLAKAN (WA) ---
+     for (const item of rejectQueue) {
+         try {
+             const formData = new FormData();
+             formData.append("action", "reportOfflineRejection");
+             formData.append("unitId", item.unitId);
+             formData.append("line", item.line);
+             formData.append("timestamp", item.timestamp);
+             formData.append("fuelman", item.fuelman || "Tidak Diketahui"); // 🔥 TAMBAHAN NAMA
+
+             await fetch(apiUrl, { method: "POST", body: formData });
+         } catch (err) {
+             console.warn("Gagal kirim item reject:", err);
+             failedRejections.push(item);
+         }
+     }
 
     // --- 3. HANDLING GAGAL & SUKSES ---
 
@@ -1843,58 +1849,53 @@ function saveLocalHistory(unitId) {
     return { allowed: true };
 }
 
-  // ==========================================
-  // 📝 FUNGSI CATAT PENOLAKAN KE MEMORI HP
-  // ==========================================
-  function queueOfflineRejection(unitId, reason) {
-    let rejections = JSON.parse(localStorage.getItem('pendingRejections') || '[]');
-    rejections.push({
-        unitId: unitId,
-        line: user, 
-        timestamp: new Date().getTime(),
-        reason: reason
-    });
-    localStorage.setItem('pendingRejections', JSON.stringify(rejections));
-    console.log(`📝 Laporan penolakan disimpan lokal untuk: ${unitId}`);
-  } 
-
-  // 🔄 HEARTBEAT SYNC: Cek data tertunda setiap 15 detik secara otomatis
-  setInterval(() => {
-  if (navigator.onLine) {
-    console.log("🔍 Memeriksa antrean data offline...");
-    uploadPendingData();
-    }
-    }, 30000); // 15000 ms = 15 detik  
-
-    // ==========================================
-// 🚀 FUNGSI KIRIM REJECT LANGSUNG (REAL-TIME)
 // ==========================================
+   // 📝 FUNGSI CATAT PENOLAKAN KE MEMORI HP
+   // ==========================================
+   function queueOfflineRejection(unitId, reason) {
+     let rejections = JSON.parse(localStorage.getItem('pendingRejections') || '[]');
+     const session = JSON.parse(localStorage.getItem("s")); // 🔥 AMBIL NAMA
+     
+     rejections.push({
+         unitId: unitId,
+         line: user, 
+         fuelman: session ? session.n : "Tidak Diketahui", // 🔥 SIMPAN NAMA
+         timestamp: new Date().getTime(),
+         reason: reason
+     });
+     localStorage.setItem('pendingRejections', JSON.stringify(rejections));
+     console.log(`📝 Laporan penolakan disimpan lokal untuk: ${unitId}`);
+   }
+
 // ==========================================
 // 🚀 FUNGSI KIRIM REJECT LANGSUNG (REAL-TIME)
 // ==========================================
 async function reportRejectionDirectly(unitId, reason) {
-    if (!navigator.onLine) {
-        queueOfflineRejection(unitId, reason);
-        return;
-    }
-    try {
-        const formData = new FormData();
-        formData.append("action", "reportOfflineRejection");
-        formData.append("unitId", unitId);
-        formData.append("line", user);
-        formData.append("timestamp", new Date().getTime());
-        formData.append("reason", reason);
+     if (!navigator.onLine) {
+         queueOfflineRejection(unitId, reason);
+         return;
+     }
+     try {
+         const session = JSON.parse(localStorage.getItem("s")); // 🔥 AMBIL NAMA
 
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 15000);
+         const formData = new FormData();
+         formData.append("action", "reportOfflineRejection");
+         formData.append("unitId", unitId);
+         formData.append("line", user);
+         formData.append("timestamp", new Date().getTime());
+         formData.append("reason", reason);
+         formData.append("fuelman", session ? session.n : "Tidak Diketahui"); // 🔥 KIRIM NAMA
 
-        await fetch(apiUrl, { method: "POST", body: formData, signal: controller.signal });
-        clearTimeout(timeout);
-        console.log("✅ Rejection terkirim ke WA secara Direct");
-    } catch (err) {
-        console.warn("Gagal kirim reject langsung, menyimpan ke antrean...", err);
-        queueOfflineRejection(unitId, reason);
-    }
+         const controller = new AbortController();
+         const timeout = setTimeout(() => controller.abort(), 15000);
+
+         await fetch(apiUrl, { method: "POST", body: formData, signal: controller.signal });
+         clearTimeout(timeout);
+         console.log("✅ Rejection terkirim ke WA secara Direct");
+     } catch (err) {
+         console.warn("Gagal kirim reject langsung, menyimpan ke antrean...", err);
+         queueOfflineRejection(unitId, reason);
+     }
 }
 
 // ==========================================
