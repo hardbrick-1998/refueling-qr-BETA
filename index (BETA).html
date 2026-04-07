@@ -624,11 +624,11 @@
       <button class="camera-toggle-btn" id="cameraToggleBtn" onclick="toggleCamera()" title="Tukar Kamera">📷</button>
     </div>
 
-    <div id="result" style="margin: 10px 0;"><span>Tekan ▶ untuk mulai / Scan Zebra</span></div>
+    <div id="result" style="margin: 10px 0;"><span>Tekan ▶ untuk mulai </span></div>
 
    <div style="margin: 15px 0; background: rgba(0, 0, 0, 0.3); padding: 10px; border-radius: 12px; border: 1px dashed #00f2ff;">
         <label style="color: #00f2ff; font-size: 12px; font-weight:bold; display: block; margin-bottom: 5px;">
-            👇 SCAN ZEBRA / KETIK MANUAL:
+            👇 KLIK DISINI UNTUK SCAN ZEBRA:
         </label>
         
         <div style="display: flex; gap: 8px;">
@@ -1930,7 +1930,7 @@ if ('serviceWorker' in navigator) {
     prosesDataScan();
   }
 
-  // 3. Otak Utamanya (Memproses Data)
+// 3. Otak Utamanya (Memproses Data)
   function prosesDataScan() {
     // Ambil elemen kotak input
     let input = document.getElementById("manualInput");
@@ -1947,20 +1947,16 @@ if ('serviceWorker' in navigator) {
 
     console.log("Input Diterima: " + code);
     
-    // Bunyikan Beep (Tanda sukses)
-    let beep = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
-    beep.play().catch(err => console.log("Audio blocked"));
-
-    // Kirim data ke sistem utama (agar pindah halaman)
-    // Kita cek fungsi mana yang tersedia di aplikasi rekan Anda
-    if (typeof handleScanResult === "function") {
-        handleScanResult(code); 
-    } 
-    else if (typeof onScanSuccess === "function") {
-        onScanSuccess(code, null);
+    // Bunyikan Beep (Pakai fungsi playBeep yang sudah ada di sistem Mass Faiz)
+    if (typeof playBeep === "function") {
+        playBeep("scanning");
     }
-    else {
-        alert("Scan Berhasil: " + code + "\n(Tapi script utama tidak ditemukan, cek console)");
+
+    // 🔥 PANGGIL FUNGSI UTAMA DEXTER 🔥
+    if (typeof onScan === "function") {
+        onScan(code); // Ini akan langsung memicu pengecekan online/offline
+    } else {
+        alert("Error: Fungsi onScan tidak ditemukan!");
     }
 
     // Bersihkan kotak input setelah sukses
