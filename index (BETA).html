@@ -635,25 +635,14 @@
       <button class="camera-toggle-btn" id="cameraToggleBtn" onclick="toggleCamera()" title="Tukar Kamera">📷</button>
     </div>
 
-    <div id="result" style="margin: 10px 0;"><span>Tekan ▶ untuk mulai SCAN via KAMERA HP </span></div>
+    <div id="result" style="margin: 10px 0;"><span>Tekan ▶ untuk mulai SCAN </span></div>
 
-   <div style="margin: 15px 0; background: rgba(0, 0, 0, 0.3); padding: 10px; border-radius: 12px; border: 1px dashed #00f2ff;">
-        <label style="color: #00f2ff; font-size: 12px; font-weight:bold; display: block; margin-bottom: 5px;">
-            👇 KLIK DISINI UNTUK SCAN ZEBRA:
-        </label>
-        
-        <div style="display: flex; gap: 8px;">
-            <input type="text" id="manualInput" inputmode="none"
-                   placeholder="KODE UNIT" 
-                   style="flex: 1; padding: 12px; border-radius: 8px; border: 2px solid #00f2ff; background: #000; color: #fff; text-align: center; font-weight: bold; font-size: 18px; text-transform: uppercase;"
-                   onkeypress="handleManualInput(event)"
-                   autocomplete="off">
-            
-            <button onclick="triggerManualScan()" 
-                    style="background: #00f2ff; color: #000; border: none; font-weight: bold; padding: 0 20px; border-radius: 8px; cursor: pointer; font-size: 16px;">
-                GO ➔
-            </button>
-        </div>
+   <div style="margin: 15px 0;">
+        <input type="text" id="manualInput" inputmode="none"
+               placeholder="[ SCAN ZEBRA READY ]" 
+               style="width: 100%; padding: 15px; border-radius: 12px; border: 2px dashed rgba(0, 242, 255, 0.4); background: rgba(0, 0, 0, 0.5); color: var(--neon-blue); text-align: center; font-family: 'Orbitron', sans-serif; font-weight: bold; font-size: 16px; letter-spacing: 2px; text-transform: uppercase; transition: all 0.3s ease; box-sizing: border-box;"
+               onkeypress="handleManualInput(event)"
+               autocomplete="off">
     </div>
     <div class="action-btns">
       <button id="startBtn" onclick="startScanner()" class="btn-scan-control" title="Mulai Kamera">▶</button>
