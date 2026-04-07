@@ -620,7 +620,7 @@
   </div>
   
   <div id="fuelmanDisplay" style="width: 100%; background: var(--neon-blue); color: #000; padding: 10px; border-radius: 8px; text-align: center;">
-      <span style="font-size: 12px; font-weight: bold; display: block; opacity: 0.8;">FUELMAN SEDANG BERTUGAS:</span>
+      <span style="font-size: 14px; font-weight: bold; display: block; opacity: 0.8;">FUELMAN SEDANG BERTUGAS A.N = :</span>
       <strong id="activeFuelmanName" style="font-size: 24px; font-family: 'Orbitron'; letter-spacing: 2px;">-</strong>
   </div>
   
@@ -740,7 +740,7 @@ const CREDS = {
 };
 
 // ✅ UPDATED URL - Apps Script V20.0
-const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbw7LroNNZcZ0IVHxRN3RC-VNoxC7ER2Xn1zLZWUTONPIX7fIcvVcyqZnkkQ2GC22wrfRA/exec";
+const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbxIY6quy-pK1JFBnzhiOOzL3UkHFnqvqakkFQodL_HGVKo0cNrrBwLzs4-EhLfIOoJTvA/exec";
 
 let user = null, line = null, qr = null, scanning = false, lastCode = null;
 let cameraFacing = "environment";
@@ -1414,7 +1414,7 @@ function handleScanSuccess(data, decodedText, result) {
         <div style="margin: 10px 0; border-top: 1px dashed var(--neon-red); width: 100%; opacity: 0.5;"></div>
         <div style="text-align: left; width: 100%; font-size: 14px; padding: 0 10px;">
            📅 Terakhir: <b style="color: #fff;">${jamRefuel}</b><br>
-           📍 Lokasi: <b style="color: #fff;"> LINE ${allowedLine}</b><br>
+           📍 Lokasi: <b style="color: #fff;"> ${allowedLine}</b><br>
            ⏳ Tunggu: <b style="color: #ffcc00; font-size: 16px;">${waktuSisaStr}</b> lagi
         </div>
         <button onclick="startScan()" style="margin-top: 15px; background: rgba(220, 38, 38, 0.2); border: 1px solid var(--neon-red); color: var(--neon-red); padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; font-family: 'Orbitron'; text-transform: uppercase;">SCAN UNIT LAIN 🔄</button>
@@ -1626,17 +1626,17 @@ async function submitFinalData() {
     btn.disabled = true;
     btn.innerHTML = "⏳ MENGIRIM...";
 
-    // 🔥 AMBIL NAMA FUELMAN DARI MEMORI HP
-     const session = JSON.parse(localStorage.getItem("s"));
+    const session = JSON.parse(localStorage.getItem("s"));
 
-     const payload = {
-         unitId: currentUnitId,
-         liter: literVal,
-         hm: hmVal,
-         line: user,
-         fuelman: session ? session.n : "TIDAK TERDETEKSI", // <--- Masukkan nama ke keranjang
-         device: "Mobile Trial"
-     };
+    const payload = {
+        unitId: currentUnitId,
+        liter: literVal, 
+        hm: hmVal,       
+        line: user,
+        fuelman: session ? session.n : "TIDAK TERDETEKSI", 
+        device: "Mobile Trial",
+        timestamp: new Date().getTime() // 🔥 INI OBATNYA: Rekam detik ini juga!
+    };
 
      try {
          const formData = new FormData();
