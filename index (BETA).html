@@ -937,7 +937,9 @@ function transitionToScanner() {
 
 function logout() {
   if(confirm("Logout?")) {
-    localStorage.removeItem("s");
+    // 🔥 PERBAIKAN: Hapus SEMUA memori, termasuk cache history yang error!
+    localStorage.clear(); 
+    
     user = null; line = null;
     validUnitIds.clear();
     refuelDB = {};
@@ -1031,13 +1033,23 @@ function extractUnitNumber(qrText) {
   return normalized.includes('|') ? normalized.split('|')[0].trim() : normalized;
 }
 
-// ✅ SIMPLIFIED: Parse DD/MM/YYYY HH:MM:SS format dari backend
+// ✅ SIMPLIFIED & FIXED: Parse DD/MM/YYYY HH:MM:SS format dari backend
 function parseTimestampSimple(timestampStr) {
   if (!timestampStr) return "Barusan";
   
   try {
-    // Biarkan Javascript memproses format ISO dari Google secara otomatis
-    const date = new Date(timestampStr);
+    let date;
+    // Penterjemah Tanggal Indonesia ke Javascript
+    if (typeof timestampStr === "string" && timestampStr.includes("/")) {
+        let parts = timestampStr.split(" ");
+        let dmy = parts[0].split("/"); // [dd, MM, yyyy]
+        let hms = parts[1] ? parts[1].split(":") : [0, 0, 0];
+        // Susun: Tahun, Bulan (0-11), Tanggal, Jam, Menit, Detik
+        date = new Date(dmy[2], dmy[1] - 1, dmy[0], hms[0], hms[1], hms[2]);
+    } else {
+        // Jika sudah format baku
+        date = new Date(timestampStr);
+    }
     
     // Pastikan valid
     if (isNaN(date.getTime())) return "-"; 
@@ -1046,13 +1058,12 @@ function parseTimestampSimple(timestampStr) {
     const jam = date.getHours().toString().padStart(2, '0');
     const menit = date.getMinutes().toString().padStart(2, '0');
     
-    return `${jam}:${menit}`; // Contoh Output: "14:30"
+    return `${jam}:${menit}`; 
   } catch (err) {
     console.error("Error parsing date:", err);
     return "-";
   }
 }
-
 function speak(text, beepType = null) {
   showVibrateNotification("🔊 Notifikasi", text);
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
