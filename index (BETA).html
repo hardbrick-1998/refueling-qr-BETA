@@ -729,7 +729,7 @@ const CREDS = {
 };
 
 // ✅ UPDATED URL - Apps Script V20.0
-const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbzoy9sANTGUxvN1hXs_uma8fq2xiQdBm6hhBmRDZcvTf-C6P56NpCELpjfyYK1iS21Hbg/exec";
+const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbyRrDqhsWu7uXjQSMOfGfI0tds_dmLd7Q7rGFTbgODVJIoK2Xq2sNm9TW34e8sA4m_PkA/exec";
 
 let user = null, line = null, qr = null, scanning = false, lastCode = null;
 let cameraFacing = "environment";
@@ -1250,7 +1250,7 @@ async function onScan(decodedText) {
       // Ini mengatasi masalah unit ditolak padahal di server sudah boleh.
       
       apiRetryCount = 0;
-      const device = /Mobi|Android/i.test(navigator.userAgent) ? "Mobile" : "Desktop";
+      const device = "REAL TIME"; // 🔥 UBAH JADI REAL TIME
       processQRCode(decodedText, device, result);
       
   } else {
@@ -1640,8 +1640,8 @@ async function submitFinalData() {
         hm: hmVal,       
         line: user,
         fuelman: session ? session.n : "TIDAK TERDETEKSI", 
-        device: "Mobile Trial",
-        timestamp: new Date().getTime() // 🔥 INI OBATNYA: Rekam detik ini juga!
+        device: "REAL TIME", // 🔥 UBAH JADI REAL TIME
+        timestamp: new Date().getTime()
     };
 
      try {
@@ -1747,8 +1747,8 @@ async function uploadPendingData() {
              formData.append("liter", item.liter);
              formData.append("hm", item.hm);
              formData.append("line", item.line);
-             formData.append("device", "Mobile (Synced)");
-             formData.append("fuelman", item.fuelman || "TIDAK TERDETEKSI"); // 🔥 TAMBAHAN NAMA
+             formData.append("device", "OFFLINE"); // 🔥 UBAH JADI OFFLINE
+             formData.append("fuelman", item.fuelman || "TIDAK TERDETEKSI");
              if(item.timestamp) formData.append("originalTime", item.timestamp);
 
              const response = await fetch(apiUrl, { method: "POST", body: formData, redirect: "follow" });
@@ -1765,11 +1765,12 @@ async function uploadPendingData() {
      for (const item of rejectQueue) {
          try {
              const formData = new FormData();
-             formData.append("action", "reportOfflineRejection");
-             formData.append("unitId", item.unitId);
-             formData.append("line", item.line);
-             formData.append("timestamp", item.timestamp);
-             formData.append("fuelman", item.fuelman || "Tidak Diketahui"); // 🔥 TAMBAHAN NAMA
+             formData.append("action", "reportOfflineRejection");
+             formData.append("unitId", item.unitId);
+             formData.append("line", item.line);
+             formData.append("timestamp", item.timestamp);
+             formData.append("fuelman", item.fuelman || "Tidak Diketahui"); 
+             formData.append("device", "OFFLINE"); // 🔥 TAMBAHKAN BARIS INI
 
              await fetch(apiUrl, { method: "POST", body: formData });
          } catch (err) {
@@ -1885,12 +1886,13 @@ async function reportRejectionDirectly(unitId, reason) {
          const session = JSON.parse(localStorage.getItem("s")); // 🔥 AMBIL NAMA
 
          const formData = new FormData();
-         formData.append("action", "reportOfflineRejection");
-         formData.append("unitId", unitId);
-         formData.append("line", user);
-         formData.append("timestamp", new Date().getTime());
-         formData.append("reason", reason);
-         formData.append("fuelman", session ? session.n : "Tidak Diketahui"); // 🔥 KIRIM NAMA
+         formData.append("action", "reportOfflineRejection");
+         formData.append("unitId", unitId);
+         formData.append("line", user);
+         formData.append("timestamp", new Date().getTime());
+         formData.append("reason", reason);
+         formData.append("fuelman", session ? session.n : "Tidak Diketahui"); 
+         formData.append("device", "REAL TIME"); // 🔥 TAMBAHKAN BARIS INI
 
          const controller = new AbortController();
          const timeout = setTimeout(() => controller.abort(), 15000);
