@@ -663,6 +663,19 @@
     </div>
 
     <div style="display: flex; flex-direction: column; align-items: center; width: 100%;">
+        
+        <div style="width: 310px; margin-bottom: 25px;">
+            <label style="color: #fff !important; font-size: 16px !important; letter-spacing: 1px; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 10px; text-align: left; padding-left: 85px;">
+                NAMA OPERATOR <span style="color: #DC2626; font-size: 18px;">*</span>
+            </label>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div style="width: 70px; height: 90px; display: flex; align-items: center; justify-content: center;">
+                    <span style="font-size: 60px; line-height: 1;">👷‍♂️</span>
+                </div>
+                <input type="text" id="operatorInput" placeholder="NAMA" required
+                       style="width: 220px; height: 90px !important; font-family: 'Orbitron', sans-serif; font-size: 30px !important; font-weight: 800; text-align: center; border: 3px solid rgba(0, 243, 255, 0.5) !important; border-radius: 16px !important; color: var(--neon-blue, #00f3ff) !important; background-color: #000 !important; text-transform: uppercase; text-shadow: 0 0 10px rgba(0, 243, 255, 0.8); outline: none;">
+            </div>
+        </div>
 
         <div style="width: 310px; margin-bottom: 25px;">
             <label style="color: #059669; font-size: 14px; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 8px; text-align: left; padding-left: 85px;">
@@ -729,7 +742,7 @@ const CREDS = {
 };
 
 // ✅ UPDATED URL - Apps Script V20.0
-const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbyRrDqhsWu7uXjQSMOfGfI0tds_dmLd7Q7rGFTbgODVJIoK2Xq2sNm9TW34e8sA4m_PkA/exec";
+const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbyp7KVv5s3aSbXSR74NM07pDpAW0AZDT-jZOXhMULzLMXEzg837McCK9e73Agu0nA10Bw/exec";
 
 let user = null, line = null, qr = null, scanning = false, lastCode = null;
 let cameraFacing = "environment";
@@ -1546,19 +1559,26 @@ async function submitFinalData() {
     if (isProcessing) return; 
 
     const btn = document.getElementById('saveLiterBtn');
+    const operatorInput = document.getElementById('operatorInput'); // 🔥 BARIS BARU
     const literInput = document.getElementById('literInput');
     const hmInput = document.getElementById('hmInput');
     
-    // Ambil value dan ubah ke Angka (Float) agar bisa dihitung
+    // Ambil value
+    const operatorVal = operatorInput.value.trim().toUpperCase(); // 🔥 BARIS BARU
     const literVal = parseFloat(literInput.value);
-    const hmVal = parseFloat(hmInput.value); // PENTING: HM harus jadi angka untuk validasi lonjakan
+    const hmVal = parseFloat(hmInput.value); 
 
-    // --- BATAS PENGISIAN ---
     const MAX_LITER = 333;
 
-    // 2. VALIDASI DASAR (KOSONG)
-    if (!literInput.value || !hmInput.value) {
-        alert("⚠️ Mohon isi Jumlah Solar dan HM!");
+    // 2. 🔥 VALIDASI DASAR (KOSONG) - SEKARANG MENCEGAH OPERATOR KOSONG
+    if (!operatorVal || !literInput.value || !hmInput.value) {
+        alert("⚠️ Mohon isi Nama Operator, Jumlah Solar, dan HM!");
+        
+        // Kasih efek merah di kotak yang kosong
+        if (!operatorVal) operatorInput.style.borderColor = "red";
+        if (!literInput.value) literInput.style.borderColor = "red";
+        if (!hmInput.value) hmInput.style.borderColor = "red";
+        
         return;
     }
 
@@ -1636,18 +1656,20 @@ async function submitFinalData() {
 
     const payload = {
         unitId: currentUnitId,
+        operator: operatorVal, // 🔥 TAMBAHKAN INI SAYANG
         liter: literVal, 
         hm: hmVal,       
         line: user,
         fuelman: session ? session.n : "TIDAK TERDETEKSI", 
-        device: "REAL TIME", // 🔥 UBAH JADI REAL TIME
-        timestamp: new Date().getTime()
+        device: "REAL TIME",
+        timestamp: new Date().getTime() 
     };
 
      try {
          const formData = new FormData();
          formData.append("action", "submitRefuel");
          formData.append("unitId", payload.unitId);
+         formData.append("operator", payload.operator); // 🔥 INI BARU
          formData.append("liter", payload.liter);
          formData.append("hm", payload.hm);
          formData.append("line", payload.line);
@@ -1744,6 +1766,7 @@ async function uploadPendingData() {
              const formData = new FormData();
              formData.append("action", "submitRefuel");
              formData.append("unitId", item.unitId);
+             formData.append("operator", item.operator || "-"); // 🔥 TAMBAHKAN INI
              formData.append("liter", item.liter);
              formData.append("hm", item.hm);
              formData.append("line", item.line);

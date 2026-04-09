@@ -4,8 +4,8 @@
         {
             "type": "chrome",
             "request": "launch",
-            "name": "Jalankan REFUELING APP",
-            "file": "${workspaceFolder}/index.html"
+            "name": "Jalankan REFUELING APP (BETA)",
+            "file": "${workspaceFolder}/index (BETA).html"
         }
     ]
 }
