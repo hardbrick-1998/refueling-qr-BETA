@@ -1317,11 +1317,14 @@ async function processQRCode(decodedText, device, result, retryCount = 0) {
   }
 
   try {
+    const session = JSON.parse(localStorage.getItem("s")); // 🔥 BUKA MEMORI HP BUAT CARI NAMA
+
     const formData = new FormData();
     formData.append("qrData", decodedText);
     formData.append("userAgent", navigator.userAgent);
     formData.append("device", device);
     formData.append("line", line);
+    formData.append("fuelman", session ? session.n : "TIDAK TERDETEKSI"); // 🔥 KIRIM NAMANYA KE SERVER
     
     // Timeout 10 detik agar tidak menunggu selamanya jika sinyal lemot
     const controller = new AbortController();
